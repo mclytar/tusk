@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "tusk-backend",
+    "tusk-server",
+    "tusk-admin"
+]
