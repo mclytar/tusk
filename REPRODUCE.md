@@ -20,7 +20,7 @@ BRANCH="main"
 
 while read oldrev newrev ref
 do
-    if [[ $ref = refs/heads/BRANCH ]];
+    if [ "$ref" = "refs/heads/$BRANCH" ];
     then
         echo "Ref $ref received. Deploying ${BRANCH} branch to production..."
         git --work-tree=$TARGET --git-dir=$GIT_DIR checkout -f
