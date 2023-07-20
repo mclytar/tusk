@@ -24,7 +24,10 @@ do
     then
         echo "Ref $ref received. Deploying ${BRANCH} branch to production..."
         git --work-tree=$TARGET --git-dir=$GIT_DIR checkout -f
-        # Insert here the Rust build command and the installation command.
+        # Build the executables.
+        cd $TARGET
+        cargo build
+        # Insert here the installation command.
     else
         echo "Ref $ref received. Doing nothing: only the ${BRANCH} branch may be deployed."
     fi  
