@@ -30,8 +30,9 @@ do
     fi  
 done
 ```
-Finally, return to the shell and add the remote:
+Finally, make the file executable and return to the shell and add the remote:
 ```shell
+$ chmod +x hooks/post-receive
 $ exit
 $ git remote add remote_name ssh://user@server.com/~/tusk.git
 $ git push remote_name main
