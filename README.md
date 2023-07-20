@@ -16,8 +16,8 @@ will be tested on a Windows machine, hence some functionalities are available fo
 system is officially supported; however, I suspect that many functionalities will work in any Linux distro as well.
 
 Said that, this is a first roadmap for the server construction.
-- [ ] Build a fully functioning server serving a trivial HTTP request.
-  - [ ] Implement log functionalities.
+- [x] Build a fully functioning server serving a trivial HTTP request.
+  - [x] Implement log functionalities.
 - [ ] Make the server work on a virtual Ubuntu Server machine in a fully autonomous fashion.
   - [ ] Take note of the steps so that it is possible to reproduce or automate the procedure.
 - [ ] Implement CI/CD.
