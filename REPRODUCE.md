@@ -15,7 +15,7 @@ Use this as a post-receive hook:
 ```shell
 #!/bin/bash
 TARGET="/home/mclytar/deploy/tusk/"
-GIT_DIR="/home/mclytar/git/tusk.git"
+GIT_DIR="/home/mclytar/tusk.git"
 BRANCH="main"
 
 while read oldrev newrev ref
