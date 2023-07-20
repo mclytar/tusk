@@ -26,7 +26,7 @@ do
         git --work-tree=$TARGET --git-dir=$GIT_DIR checkout -f
         # Build the executables.
         cd $TARGET
-        cargo build
+        ~/.cargo/bin/cargo build
         # Insert here the installation command.
     else
         echo "Ref $ref received. Doing nothing: only the ${BRANCH} branch may be deployed."
