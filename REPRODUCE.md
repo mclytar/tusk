@@ -33,6 +33,6 @@ done
 Finally, return to the shell and add the remote:
 ```shell
 $ exit
-$ git remote add remote_name ssh://user@server.com/tusk.git
+$ git remote add remote_name ssh://user@server.com/~/tusk.git
 $ git push remote_name main
 ```
