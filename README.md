@@ -22,7 +22,7 @@ Said that, this is a first roadmap for the server construction.
   - [x] This cannot be done because a root account is needed to bind to port 80. 
   - [x] Take note of the steps so that it is possible to reproduce or automate the procedure.
 - [x] ~~Implement CI/CD.~~ Partially done: the script works, but no automatic installation can happen at this point. 
-- [ ] **Checkpoint #1:** everything works as intended!
+- [x] **Checkpoint #1:** everything works as intended!
   - At this point, `tusk-admin` is still empty, `tusk-backend` contains the necessary data structures to make things
     work and `tusk-server` contains the necessary boilerplate to make the server run.
   - **NOTE:** HTTPS is **NOT** needed at this point! HTTPS will be mandatory in production (with the only option for
