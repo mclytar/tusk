@@ -18,9 +18,10 @@ system is officially supported; however, I suspect that many functionalities wil
 Said that, this is a first roadmap for the server construction.
 - [x] Build a fully functioning server serving a trivial HTTP request.
   - [x] Implement log functionalities.
-- [ ] Make the server work on a virtual Ubuntu Server machine in a fully autonomous fashion.
-  - [ ] Take note of the steps so that it is possible to reproduce or automate the procedure.
-- [ ] Implement CI/CD.
+- [x] ~~Make the server work on a virtual Ubuntu Server machine in a fully autonomous fashion.~~
+  - [x] This cannot be done because a root account is needed to bind to port 80. 
+  - [x] Take note of the steps so that it is possible to reproduce or automate the procedure.
+- [x] ~~Implement CI/CD.~~ Partially done: the script works, but no automatic installation can happen at this point. 
 - [ ] **Checkpoint #1:** everything works as intended!
   - At this point, `tusk-admin` is still empty, `tusk-backend` contains the necessary data structures to make things
     work and `tusk-server` contains the necessary boilerplate to make the server run.
