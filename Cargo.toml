@@ -2,6 +2,7 @@
 
 members = [
     "tusk-backend",
+    "tusk-derive",
     "tusk-server",
     "tusk-admin"
 ]

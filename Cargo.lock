@@ -1168,12 +1168,22 @@ name = "tusk-backend"
 version = "0.1.0"
 
 [[package]]
+name = "tusk-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.26",
+]
+
+[[package]]
 name = "tusk-server"
 version = "0.1.0"
 dependencies = [
  "actix-web",
  "log",
  "simple_logger",
+ "tusk-derive",
 ]
 
 [[package]]

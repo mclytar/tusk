@@ -1,22 +1,26 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, dev};
 #[allow(unused)] use log::{error, warn, info, debug, trace};
 use simple_logger::SimpleLogger;
+use tusk_derive::rest_resource;
 
-#[get("/")]
-async fn hello() -> impl Responder {
-    debug!("Requested '/'.");
-    HttpResponse::Ok().body("Hello world!")
-}
+pub struct IndexResource;
 
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    debug!("Requested '/echo'.");
-    HttpResponse::Ok().body(req_body)
-}
+#[rest_resource("/")]
+impl IndexResource {
+    async fn get() -> impl Responder {
+        debug!("GET /");
+        HttpResponse::Ok().body("This is the index!")
+    }
 
-async fn manual_hello() -> impl Responder {
-    debug!("Requested '/hey'.");
-    HttpResponse::Ok().body("Hey there!")
+    async fn post(req_body: String) -> impl Responder {
+        debug!("POST /");
+        HttpResponse::Ok().body(req_body)
+    }
+
+    async fn delete() -> impl Responder {
+        debug!("DELETE /");
+        HttpResponse::Ok().body("Resource deleted!")
+    }
 }
 
 #[actix_web::main]
@@ -30,9 +34,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            .service(hello)
-            .service(echo)
-            .route("/hey", web::get().to(manual_hello))
+            .service(IndexResource)
     })
         .bind(("0.0.0.0", 80))?
         .run()
