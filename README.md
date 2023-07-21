@@ -29,7 +29,7 @@ Said that, this is a first roadmap for the server construction.
     HTTP being as redirect to HTTPS or ACME functionalities).
   - **NOTE:** additionally, custom options are not needed at this point. They will be implemented in a later point,
     so to make service/daemon integration with the system better.
-- [ ] Implement a simple REST functionality.
+- [x] Implement a simple REST functionality.
 - [ ] Implement unit/integration tests.
 - [ ] Integrate `tera` into the project so that it is possible to build dynamic pages.
 - [ ] Implement `/` using Bootstrap.
