@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpResponse, HttpServer, Responder, dev};
+use actix_web::{App, HttpResponse, HttpServer, Responder};
 #[allow(unused)] use log::{error, warn, info, debug, trace};
 use simple_logger::SimpleLogger;
 use tusk_derive::rest_resource;
