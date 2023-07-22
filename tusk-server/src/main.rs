@@ -2,6 +2,7 @@ mod gui;
 mod api;
 
 use actix_web::{App, guard, HttpServer, web};
+use actix_web::middleware::Logger;
 use actix_web::web::ServiceConfig;
 #[allow(unused)] use log::{error, warn, info, debug, trace};
 use simple_logger::SimpleLogger;
@@ -26,11 +27,12 @@ async fn main() -> std::io::Result<()> {
     SimpleLogger::new().init()
         .expect("a functioning logger");
 
+    log::set_max_level(log::LevelFilter::Debug);
     info!("Dummy configuration loaded.");
 
     info!("Starting server...");
-
     HttpServer::new(|| App::new()
+        .wrap(Logger::default())
         .configure(configure)
     ).bind(("0.0.0.0", 80))?
         .run()
