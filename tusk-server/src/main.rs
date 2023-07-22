@@ -1,11 +1,13 @@
 mod gui;
 mod api;
 
+use std::sync::{Arc, RwLock};
 use actix_web::{App, guard, HttpServer, web};
 use actix_web::middleware::Logger;
 use actix_web::web::ServiceConfig;
 #[allow(unused)] use log::{error, warn, info, debug, trace};
 use simple_logger::SimpleLogger;
+use tera::Tera;
 
 fn configure(cfg: &mut ServiceConfig) {
     // Configure GUI
@@ -22,16 +24,49 @@ fn configure(cfg: &mut ServiceConfig) {
     );
 }
 
+#[derive(Clone, Debug)]
+pub struct TuskConfiguration {
+    tera: Arc<RwLock<Tera>>
+}
+impl TuskConfiguration {
+    pub fn to_data(&self) -> web::Data<TuskConfiguration> {
+        web::Data::new(self.clone())
+    }
+}
+impl Default for TuskConfiguration {
+    fn default() -> Self {
+        let tera = match Tera::new("_srv/http/**/*.tera") {
+            Ok(t) => t,
+            Err(e) => {
+                error!("Cannot load Tera templates: {}", e);
+                ::std::process::exit(1);
+            }
+        };
+
+        for template in tera.get_template_names() {
+            info!("Loaded Tera template {template}");
+        }
+
+        let tera = Arc::new(RwLock::new(tera));
+
+        TuskConfiguration {
+            tera
+        }
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     SimpleLogger::new().init()
         .expect("a functioning logger");
 
     log::set_max_level(log::LevelFilter::Debug);
+    let config = TuskConfiguration::default();
     info!("Dummy configuration loaded.");
 
     info!("Starting server...");
-    HttpServer::new(|| App::new()
+    HttpServer::new(move || App::new()
+        .app_data(config.to_data())
         .wrap(Logger::default())
         .configure(configure)
     ).bind(("0.0.0.0", 80))?

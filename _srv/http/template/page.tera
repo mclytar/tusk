@@ -1,0 +1,73 @@
+{% extends "template/base.tera" %}
+{% block head %}
+    {{ super() }}
+    <style>
+        body {
+            position: absolute;
+
+            display: flex;
+            flex-direction: column;
+
+            width: 100%;
+            height: 100%;
+        }
+
+        .navbar {
+            box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .1);
+        }
+
+        @media (min-width: 768px) {
+            .navbar {
+                top: 0;
+                position: sticky;
+                z-index: 999;
+            }
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary p-3">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="/static/favicon.ico" alt="Logo" width="32" height="32" class="d-inline-block align-text-top">
+                <span class="ms-2">Home Server</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#divNavbarCollapse" aria-controls="divNavbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="divNavbarCollapse">
+                <ul class="navbar-nav me-auto">
+                </ul>
+                <div class="d-flex dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        Dummy
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-lg-end" aria-labelledby="dropdownMenuButton">
+                        <li><a class="dropdown-item" href="#">Impostazioni</a></li>
+                        <li><a class="dropdown-item" href="#">Esci</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="d-flex flex-nowrap h-100">
+        <div class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark" style="width: 280px;">
+            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                <img src="/static/favicon.ico" alt="Logo" width="32" height="32" class="d-inline-block align-text-top pe-none me-2">
+                <span class="fs-4">Applicazioni</span>
+            </a>
+            <hr>
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item">
+                    <a href="/" class="nav-link active">
+                        <i class="bi-house pe-none me-2"></i>
+                        Home
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <main class="bg-body-secondary p-3 w-100 h-100">
+            {% block main %}{% endblock %}
+        </main>
+    </div>
+{% endblock %}
