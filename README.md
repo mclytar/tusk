@@ -43,7 +43,7 @@ Said that, this is a first roadmap for the server construction.
     - Shopping list
     - Log Out (at the bottom of the menu)
   - Everything will be pretty static, no need to implement anything at this stage.
-- [ ] Implement `/login` using Bootstrap.
+- [x] Implement `/login` using Bootstrap.
   - `/login` will be a special page which only contains the login form.
   - The `/login` functionality will not work at this stage.
 - [ ] Implement `/v1` as the API entrypoint.

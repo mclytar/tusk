@@ -1,0 +1,112 @@
+{% extends "template/base.tera" %}
+{% block head %}
+    {{ super() }}
+    <style>
+        body {
+            display: flex;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .gradient-custom {
+            /* fallback for old browsers */
+            background: #6a11cb;
+
+            /* Chrome 10-25, Safari 5.1-6 */
+            background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+
+            /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+        }
+
+        @media (min-width: 576px) {
+            .login-card {
+                width: 400px;
+            }
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <div class="w-100 h-100 gradient-custom d-flex align-items-center">
+        <div class="card mx-auto shadow-sm login-card">
+            <div class="card-header">
+                <h3>Home server</h3>
+            </div>
+            <div class="card-body">
+                <h4 class="mb-3">Log in</h4>
+                <form id="formLogin" class="needs-validation" action="javascript:formLogin_submit()" novalidate>
+                    <div class="form-floating mb-3">
+                        <input type="text" name="username" class="form-control" id="inputUsername" placeholder="username" oninput="input_clearInvalid(this)" required>
+                        <label for="inputUsername" class="form-label">Username</label>
+                        <div id="inputUsernameFeedback" class="invalid-feedback">
+                            Mandatory
+                        </div>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" name="password" class="form-control" id="inputPassword" placeholder="password" oninput="input_clearInvalid(this)" required>
+                        <label for="inputPassword" class="form-label">Password</label>
+                        <div id="inputPasswordFeedback" class="invalid-feedback">
+                            Mandatory
+                        </div>
+                    </div>
+                    <div id="formAlertContainer"></div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Log in</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        function formLogin_showAlert(message) {
+            let formattedMessage = `<div>${message}</div>`;
+            let closeButton = '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"</button>';
+            let alertContent = $(`<div class="alert alert-danger alert-dismissible" role="alert">${formattedMessage}${closeButton}</div>`);
+            let alertContainer = $("#formAlertContainer");
+            alertContainer.empty();
+            alertContainer.append(alertContent);
+        }
+
+        function input_clearInvalid(sender) {
+            $(sender).parent().removeClass("was-validated");
+            $(sender).removeClass("is-invalid");
+        }
+
+        function formLogin_submit() {
+            if ($("#formLogin")[0].checkValidity()) {
+                $("#inputUsername").parent().removeClass("was-validated");
+                $("#inputPassword").parent().removeClass("was-validated");
+            } else {
+                $("#inputUsername").parent().addClass("was-validated");
+                $("#inputPassword").parent().addClass("was-validated");
+                return;
+            }
+
+            $.ajax({
+                type: "POST",
+                url: "/v1/session",
+                data: $("#formLogin").serialize(),
+                error: function (xhr, status, err) {
+                    if (xhr.status === 401) {
+                        // Handle bad credentials
+                        $("#inputUsername").addClass("is-invalid");
+                        $("#inputPassword").addClass("is-invalid");
+                        formLogin_showAlert("Wrong username or password.");
+                    } else {
+                        // Handle server error
+                        formLogin_showAlert("Internal server error; please retry later.");
+                    }
+                },
+                success: function (data, status, xhr) {
+                    window.location.href = "/";
+                }
+            })
+        }
+
+        function formLogin_setInvalid() {
+            document.getElementById("inputUsername").classList.add("is-invalid");
+            document.getElementById("inputPassword").classList.add("is-invalid");
+        }
+    </script>
+{% endblock %}
