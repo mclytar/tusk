@@ -8,6 +8,7 @@ pub fn rest_resource(args: TokenStream, input: TokenStream) -> TokenStream {
     let path = parse_macro_input!(args as Literal);
     let body = parse_macro_input!(input as ItemImpl);
 
+    let self_ty = body.self_ty.clone();
     let methods: Vec<Ident> = body.items.iter()
         .filter_map(|item| {
             match item {
@@ -22,7 +23,7 @@ pub fn rest_resource(args: TokenStream, input: TokenStream) -> TokenStream {
     quote! {
         #body
 
-        impl actix_web::dev::HttpServiceFactory for IndexResource {
+        impl actix_web::dev::HttpServiceFactory for #self_ty {
             fn register(self, config: &mut actix_web::dev::AppService) {
                 actix_web::web::resource(#path)
                     #(.route(actix_web::web::#methods().to(Self::#methods)))*
