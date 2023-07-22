@@ -23,48 +23,73 @@
                 z-index: 999;
             }
         }
+
+        .tusk-role {
+            margin: 1px;
+            background-color: dimgray;
+            color: white;
+        }
+
+        .tusk-role-Admin {
+            background-color: darkred;
+            color: white;
+        }
     </style>
 {% endblock %}
 {% block body %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary p-3">
+    <nav class="navbar navbar-expand-xl navbar-dark bg-primary p-3">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
-                <img src="/static/favicon.ico" alt="Logo" width="32" height="32" class="d-inline-block align-text-top">
+                <img src="/static/favicon.ico" alt="Logo" width="32" height="32" class="d-none d-sm-inline-block align-text-top">
                 <span class="ms-2">Home Server</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#divNavbarCollapse" aria-controls="divNavbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="divNavbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="divNavbarCollapse">
-                <ul class="navbar-nav me-auto">
-                </ul>
-                <div class="d-flex dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                        Dummy
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-lg-end" aria-labelledby="dropdownMenuButton">
-                        <li><a class="dropdown-item" href="#">Impostazioni</a></li>
-                        <li><a class="dropdown-item" href="#">Esci</a></li>
-                    </ul>
-                </div>
-            </div>
         </div>
     </nav>
     <div class="d-flex flex-nowrap h-100">
-        <div class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark" style="width: 280px;">
-            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
-                <img src="/static/favicon.ico" alt="Logo" width="32" height="32" class="d-inline-block align-text-top pe-none me-2">
-                <span class="fs-4">Applicazioni</span>
-            </a>
+        <div id="sidebar" class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark offcanvas-xl offcanvas-start" style="width: 280px;">
+            <div class="d-flex d-xl-none flex-column ms-2 me-2 p-2">
+                <button type="button" class="btn-close ms-auto" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
+            </div>
+            <div class="d-flex flex-column ms-2 me-2 p-2">
+                <img src="/static/favicon.ico" alt="" width="128" height="128" class="d-inline-block ms-auto me-auto">
+                <a href="/" class="d-flex fs-5 mt-2 mb-2 text-light text-decoration-none ms-auto me-auto">McLytar</a>
+                <div class="d-flex justify-content-center">
+                    <span class="badge tusk-role tusk-role-Admin">Admin</span>
+                    <span class="badge tusk-role tusk-role-User">User</span>
+                </div>
+            </div>
             <hr>
-            <ul class="nav nav-pills flex-column mb-auto">
-                <li class="nav-item">
-                    <a href="/" class="nav-link active">
-                        <i class="bi-house pe-none me-2"></i>
-                        Home
-                    </a>
-                </li>
-            </ul>
+            <nav class="nav nav-pills flex-column">
+                <a href="/" class="nav-link active">
+                    <i class="bi-house pe-none me-2"></i>
+                    Home
+                </a>
+                <a href="/" class="nav-link text-white">
+                    <i class="bi-speedometer2 pe-none me-2"></i>
+                    Dashboard
+                </a>
+                <a href="/" class="nav-link text-white">
+                    <i class="bi-cloud pe-none me-2"></i>
+                    Cloud
+                </a>
+                <a href="/" class="nav-link text-white">
+                    <i class="bi-card-checklist pe-none me-2"></i>
+                    Tasks
+                </a>
+                <a href="/" class="nav-link text-white">
+                    <i class="bi-cart pe-none me-2"></i>
+                    Shopping list
+                </a>
+            </nav>
+            <nav class="nav nav-pills flex-column mt-auto">
+                <a href="/" class="nav-link text-danger-emphasis">
+                    <i class="bi-box-arrow-right pe-none me-2"></i>
+                    Log out
+                </a>
+            </nav>
         </div>
         <main class="bg-body-secondary p-3 w-100 h-100">
             {% block main %}{% endblock %}

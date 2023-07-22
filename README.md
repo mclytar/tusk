@@ -32,17 +32,16 @@ Said that, this is a first roadmap for the server construction.
 - [x] Implement a simple REST functionality.
 - [x] Implement unit/integration tests.
 - [x] Integrate `tera` into the project so that it is possible to build dynamic pages.
-- [ ] Implement `/` using Bootstrap.
+- [x] Implement `/` using Bootstrap.
   - `/` will contain a dummy page with a side menu and a top menu.
   - The side menu will contain the following items:
+    - User info (in a box) 
     - Home
     - Dashboard
-    - Directories
-    - To-Do Mail
-    - Shopping List
+    - Cloud
+    - Tasks
+    - Shopping list
     - Log Out (at the bottom of the menu)
-  - The top menu will contain the following items:
-    - Profile picture and username
   - Everything will be pretty static, no need to implement anything at this stage.
 - [ ] Implement `/login` using Bootstrap.
   - `/login` will be a special page which only contains the login form.
