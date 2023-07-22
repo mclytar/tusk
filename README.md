@@ -30,7 +30,7 @@ Said that, this is a first roadmap for the server construction.
   - **NOTE:** additionally, custom options are not needed at this point. They will be implemented in a later point,
     so to make service/daemon integration with the system better.
 - [x] Implement a simple REST functionality.
-- [ ] Implement unit/integration tests.
+- [x] Implement unit/integration tests.
 - [ ] Integrate `tera` into the project so that it is possible to build dynamic pages.
 - [ ] Implement `/` using Bootstrap.
   - `/` will contain a dummy page with a side menu and a top menu.
