@@ -45,8 +45,8 @@ $ git push remote_name main
 
 The following software is necessary to correctly compile Tusk.
 
-### `pkg-config`
-Install `pkg-config` by issuing the following command.
+### Packages
 ```shell
-$ sudo apt install pkgconf
+$ sudo apt install pkgconf libsystemd-dev
 ```
+
