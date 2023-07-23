@@ -43,7 +43,7 @@ impl TuskConfiguration {
 }
 impl Default for TuskConfiguration {
     fn default() -> Self {
-        let tera = match Tera::new("_srv/http/**/*.tera") {
+        let tera = match Tera::new("/srv/http/**/*.tera") {
             Ok(t) => t,
             Err(e) => {
                 error!("Cannot load Tera templates: {}", e);
@@ -64,8 +64,7 @@ impl Default for TuskConfiguration {
 }
 
 pub fn server_spawn() -> std::io::Result<actix_web::dev::Server> {
-    SimpleLogger::new().init()
-        .expect("a functioning logger");
+    os::initialize_logger();
 
     log::set_max_level(log::LevelFilter::Debug);
     let config = TuskConfiguration::default();

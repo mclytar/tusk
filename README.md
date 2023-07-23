@@ -67,7 +67,10 @@ Said that, this is a first roadmap for the server construction.
   - [x] `tusk stop` -- Stops the server service/daemon.
   - [x] `tusk uninstall` -- Uninstalls the server service/daemon.
   - [x] `tusk reload` -- Reloads the `tera` template pages.
-- [ ] Move HTML/`tera` files to `/srv/http/`.
+- [x] Move HTML/`tera` files to `/srv/http/`.
+  - This will be automatically done by some script in the post-receive hook.
+  - On windows[development], a strategy would be to have two separate scripts `confirm` and `revert` to respectively
+    confirm and revert the changes.
 - [ ] [OPTIONAL] Install cross-compilation options.
 - [ ] After checking that everything works, implement service/daemon functionalities for Ubuntu.
 - [ ] Update CI/CD to uninstall the old version of the server and install the new version.

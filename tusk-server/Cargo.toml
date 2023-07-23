@@ -18,3 +18,4 @@ tusk-derive = { path = "../tusk-derive" }
 
 [target.'cfg(windows)'.dependencies]
 windows-service = "0.6"
+winlog = "0.2"

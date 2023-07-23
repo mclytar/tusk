@@ -71,6 +71,6 @@ impl IndexResource {
 }
 
 pub fn configure(cfg: &mut ServiceConfig) {
-    cfg.service(actix_files::Files::new("/static", "_srv/http/static"));
+    cfg.service(actix_files::Files::new("/static", "/srv/http/static"));
     cfg.route("/{path:.*}", web::get().to(GUIResource::get));
 }

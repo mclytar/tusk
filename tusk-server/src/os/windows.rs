@@ -72,3 +72,8 @@ pub fn run_service() -> Result<()> {
 
     Ok(())
 }
+
+pub fn initialize_logger() {
+    winlog::init("Tusk Server")
+        .expect("a functioning logger");
+}

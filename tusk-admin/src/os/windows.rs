@@ -36,6 +36,12 @@ pub fn daemon_install() -> windows_service::Result<()> {
     let service = service_manager.create_service(&service_info, ServiceAccess::CHANGE_CONFIG)?;
     service.set_description("Tusk server service for development")?;
 
+    println!("Registering logger...");
+
+    if let Err(e) = winlog::try_register("Tusk Server") {
+        println!("Cannot register logger: {e}");
+    }
+
     println!("Done!");
 
     Ok(())
@@ -70,6 +76,14 @@ pub fn daemon_uninstall() -> windows_service::Result<()> {
     }
     println!("\nCannot verify deletion status.");
     println!("Service tusk-server has been marked for deletion.");
+
+    println!("Deregister logger...");
+
+    if let Err(e) = winlog::try_deregister("Tusk Server") {
+        println!("Cannot deregister logger: {e}");
+    };
+
+    println!("Done!");
 
     Ok(())
 }
