@@ -56,7 +56,7 @@ Said that, this is a first roadmap for the server construction.
     expired or not. It is not needed at this stage.
 - [x] Implement authentication via `/v1/session` and the `/login` page.
 - [x] Implement session checks and redirect to `/login` if there is no valid session.
-- [ ] **Checkpoint #2:** everything works as intended!
+- [x] **Checkpoint #2:** everything works as intended!
   - At this point, `tusk-admin` is still empty, `tusk-backend` contains a bit more stuff (mainly to handle REST
     resources and session cookies management) and `tusk-server` contains the necessary code to make the server work.
   - Now we need to start implementing the main things and, for this, we need to refresh the `tera` templates a lot.
