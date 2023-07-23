@@ -18,7 +18,7 @@ do
         status=$?
         if [ $status -eq 0 ];
         then
-            /home/mclytar/install/tusk/install
+            sudo /home/mclytar/install/tusk/install
         else
             echo "Unsuccessful compilation; installation aborted."
         fi
