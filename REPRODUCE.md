@@ -16,7 +16,9 @@ $ git push remote_name main
 Then, log again into the remote machine, unpack the repository and complete the setup:
 ```shell
 $ ssh user@server.com
+$ mkdir deploy
 $ mkdir deploy/tusk
+$ mkdir install
 $ mkdir install/tusk
 $ git --work-tree=./deploy/tusk/ --git-dir=./tusk.git checkout -f
 $ cp deploy/tusk/post-receive tusk.git/hooks/
