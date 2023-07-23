@@ -28,11 +28,11 @@ fn main() {
     let args = Args::parse();
 
     let result = match args.command {
-        Command::Install => os::daemon_install(),
-        Command::Uninstall => os::daemon_uninstall(),
-        Command::Start => os::daemon_start(),
-        Command::Stop => os::daemon_stop(),
-        Command::Reload => os::daemon_reload(),
+        Command::Install => os::service_install(),
+        Command::Uninstall => os::service_uninstall(),
+        Command::Start => os::service_start(),
+        Command::Stop => os::service_stop(),
+        Command::Reload => os::service_reload(),
     };
 
     if let Err(e) = result {

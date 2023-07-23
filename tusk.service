@@ -1,0 +1,14 @@
+[Unit]
+Description=Tusk HTTP server
+#Requires=postgresql.service redis.service
+#Wants=acme-redirect.service
+#After=network.target network-online.target postgresql.service redis.service
+After=network.target network-online.target
+
+[Service]
+ExecStart=/usr/bin/tusk-server
+ExecStop=/bin/kill -s QUIT $MAINPID
+Type=notify
+
+[Install]
+WantedBy=multi-user.target

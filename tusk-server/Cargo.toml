@@ -16,6 +16,9 @@ tera = "1"
 tokio = "1"
 tusk-derive = { path = "../tusk-derive" }
 
+[target.'cfg(unix)'.dependencies]
+nix = "0.26"
+
 [target.'cfg(windows)'.dependencies]
 windows-service = "0.6"
 winlog = "0.2"

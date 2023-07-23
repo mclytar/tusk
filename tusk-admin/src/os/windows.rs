@@ -7,7 +7,7 @@ use windows_service::{
 };
 use windows_service::service::ServiceState;
 
-pub fn daemon_install() -> windows_service::Result<()> {
+pub fn service_install() -> windows_service::Result<()> {
 
     println!("Gathering information...");
 
@@ -47,7 +47,7 @@ pub fn daemon_install() -> windows_service::Result<()> {
     Ok(())
 }
 
-pub fn daemon_uninstall() -> windows_service::Result<()> {
+pub fn service_uninstall() -> windows_service::Result<()> {
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -88,7 +88,7 @@ pub fn daemon_uninstall() -> windows_service::Result<()> {
     Ok(())
 }
 
-pub fn daemon_start() -> windows_service::Result<()> {
+pub fn service_start() -> windows_service::Result<()> {
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -115,7 +115,7 @@ pub fn daemon_start() -> windows_service::Result<()> {
     Ok(())
 }
 
-pub fn daemon_stop() -> windows_service::Result<()> {
+pub fn service_stop() -> windows_service::Result<()> {
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -142,9 +142,9 @@ pub fn daemon_stop() -> windows_service::Result<()> {
     Ok(())
 }
 
-pub fn daemon_reload() -> windows_service::Result<()> {
-    daemon_stop()?;
-    daemon_start()?;
+pub fn service_reload() -> windows_service::Result<()> {
+    service_stop()?;
+    service_start()?;
     Ok(())
 }
 
