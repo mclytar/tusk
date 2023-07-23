@@ -51,22 +51,43 @@ impl TuskConfigurationFile {
 
         let tera = Arc::new(RwLock::new(tera));
 
+        let redis_uri = self.redis.url;
+        let session_key = actix_web::cookie::Key::generate();
+        let session_lifecycle = actix_session::config::PersistentSession::default()
+            .session_ttl(actix_web::cookie::time::Duration::minutes(15))
+            .session_ttl_extension_policy(actix_session::config::TtlExtensionPolicy::OnEveryRequest);
+
+        let session_configuration = SessionConfiguration {
+            redis_uri,
+            session_key,
+            session_lifecycle
+        };
+
         let TuskConfigurationSection { log_level, www_domain, api_domain } = self.tusk;
         log::set_max_level(log_level);
 
         TuskConfiguration {
             tera,
             www_domain,
-            api_domain
+            api_domain,
+            session_configuration
         }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
+pub struct SessionConfiguration {
+    redis_uri: String,
+    session_key: actix_web::cookie::Key,
+    session_lifecycle: actix_session::config::PersistentSession
+}
+
+#[derive(Clone)]
 pub struct TuskConfiguration {
     pub tera: Arc<RwLock<Tera>>,
     www_domain: String,
-    api_domain: String
+    api_domain: String,
+    session_configuration: SessionConfiguration
 }
 impl TuskConfiguration {
     pub fn to_data(&self) -> web::Data<TuskConfiguration> {
@@ -89,5 +110,19 @@ impl TuskConfiguration {
         context.insert("api_domain", &self.api_domain);
 
         context
+    }
+
+    pub async fn redis_store(&self) -> actix_session::storage::RedisSessionStore {
+        actix_session::storage::RedisSessionStore::new(&self.session_configuration.redis_uri)
+            .await
+            .expect("Redis connection")
+    }
+
+    pub fn session_key(&self) -> actix_web::cookie::Key {
+        self.session_configuration.session_key.clone()
+    }
+
+    pub fn session_lifecycle(&self) -> actix_session::config::PersistentSession {
+        self.session_configuration.session_lifecycle.clone()
     }
 }

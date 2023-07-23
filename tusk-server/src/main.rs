@@ -6,8 +6,8 @@ mod settings;
 
 #[allow(unused)] use log::{error, warn, info, debug, trace};
 
-use actix_session::{SessionMiddleware, storage::CookieSessionStore};
-use actix_web::{App, guard, HttpServer, web, cookie::Key};
+use actix_session::{SessionMiddleware};
+use actix_web::{App, guard, HttpServer, web};
 use actix_web::middleware::Logger;
 use settings::TuskConfiguration;
 use crate::settings::TuskConfigurationFile;
@@ -23,11 +23,13 @@ pub fn server_spawn() -> std::io::Result<actix_web::dev::Server> {
     let tusk = TuskConfigurationFile::import()?
         .into_tusk();
 
+    let redis_store = actix_web::rt::System::new().block_on(tusk.redis_store());
+
     info!("Starting server...");
     let server = HttpServer::new(move || App::new()
         .app_data(tusk.to_data())
-        .wrap(SessionMiddleware::builder(CookieSessionStore::default(), Key::from(&[0; 64]))
-            .cookie_domain(Some(tusk.www_domain().to_owned()))
+        .wrap(SessionMiddleware::builder(redis_store.clone(), tusk.session_key())
+            .session_lifecycle(tusk.session_lifecycle())
             .cookie_secure(false)
             .build()
         ).wrap(Logger::default())
