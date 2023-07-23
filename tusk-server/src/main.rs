@@ -2,7 +2,8 @@ mod gui;
 mod api;
 
 use std::sync::{Arc, RwLock};
-use actix_web::{App, guard, HttpServer, web};
+use actix_session::{SessionMiddleware, storage::CookieSessionStore};
+use actix_web::{App, guard, HttpServer, web, cookie::Key};
 use actix_web::middleware::Logger;
 use actix_web::web::ServiceConfig;
 #[allow(unused)] use log::{error, warn, info, debug, trace};
@@ -10,17 +11,17 @@ use simple_logger::SimpleLogger;
 use tera::Tera;
 
 fn configure(cfg: &mut ServiceConfig) {
-    // Configure GUI
-    cfg.service(
-        web::scope("")
-            .guard(guard::Host("localhost"))
-            .configure(gui::configure)
-    );
     // Configure API
     cfg.service(
         web::scope("/v1")
-            .guard(guard::Host("api.localhost"))
+            //.guard(guard::Host("api.localhost"))
             .configure(api::configure)
+    );
+    // Configure GUI
+    cfg.service(
+        web::scope("")
+            //.guard(guard::Host("localhost"))
+            .configure(gui::configure)
     );
 }
 
@@ -67,7 +68,10 @@ async fn main() -> std::io::Result<()> {
     info!("Starting server...");
     HttpServer::new(move || App::new()
         .app_data(config.to_data())
-        .wrap(Logger::default())
+        .wrap(SessionMiddleware::builder(CookieSessionStore::default(), Key::from(&[0; 64]))
+            .cookie_secure(false)
+            .build()
+        ).wrap(Logger::default())
         .configure(configure)
     ).bind(("0.0.0.0", 80))?
         .run()

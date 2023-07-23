@@ -1,14 +1,30 @@
+use actix_session::Session;
 use actix_web::{HttpResponse, Responder};
+use actix_web::http::header::LOCATION;
 use actix_web::web::{self, ServiceConfig};
 use tusk_derive::rest_resource;
 use crate::TuskConfiguration;
 
 pub struct GUIResource;
 impl GUIResource {
-    async fn get(data: web::Data<TuskConfiguration>, path: web::Path<String>) -> impl Responder {
+    async fn get(session: Session, data: web::Data<TuskConfiguration>, path: web::Path<String>) -> impl Responder {
         let data = data.as_ref();
         let mut path = path.into_inner();
         if path.is_empty() { path = String::from("index"); }
+
+        if &path != "login" {
+            let _ = match session.get::<String>("username") {
+                Ok(Some(username)) => username,
+                Ok(None) => return HttpResponse::Found()
+                    .insert_header((LOCATION, "/login"))
+                    .finish(),
+                Err(e) => {
+                    log::error!("{e}");
+                    return HttpResponse::InternalServerError().finish()
+                }
+            };
+        }
+
         let context = tera::Context::new();
 
         let tera = match data.tera.read() {

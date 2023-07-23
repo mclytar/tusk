@@ -85,7 +85,7 @@
                 </a>
             </nav>
             <nav class="nav nav-pills flex-column mt-auto">
-                <a href="/" class="nav-link text-danger-emphasis">
+                <a href="#" class="nav-link text-danger-emphasis" onclick="aLogOut_click(this)">
                     <i class="bi-box-arrow-right pe-none me-2"></i>
                     Log out
                 </a>
@@ -94,5 +94,16 @@
         <main class="bg-body-secondary p-3 w-100 h-100">
             {% block main %}{% endblock %}
         </main>
+        <script>
+            function aLogOut_click(sender) {
+                $.ajax({
+                    type: "DELETE",
+                    url: "/v1/session",
+                    success: function (data, status, xhr) {
+                        window.location.href = "/login";
+                    }
+                })
+            }
+        </script>
     </div>
 {% endblock %}

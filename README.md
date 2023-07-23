@@ -46,16 +46,16 @@ Said that, this is a first roadmap for the server construction.
 - [x] Implement `/login` using Bootstrap.
   - `/login` will be a special page which only contains the login form.
   - The `/login` functionality will not work at this stage.
-- [ ] Implement `/v1` as the API entrypoint.
-  - [ ] Implement the `/v1/session` resource as follows:
-    - [ ] Upon `POST`, respond positively upon input `{ username = "dummy", password = "dummy" }` and negatively
+- [x] Implement `/v1` as the API entrypoint.
+  - [x] Implement the `/v1/session` resource as follows:
+    - [x] Upon `POST`, respond positively upon input `username=dummy&password=dummy` and negatively
       otherwise. In the future, this will authenticate the user.
-    - [ ] Upon `GET`, retrieve the information `{ username = "dummy" }`.
-    - [ ] Upon `DELETE`, delete the session cookie.
+    - [x] Upon `GET`, retrieve the information `{ username = "dummy" }`.
+    - [x] Upon `DELETE`, delete the session cookie.
   - **NOTE:** do **NOT** implement anything more complex than this yet. Furthermore, do not check whether the session is
     expired or not. It is not needed at this stage.
-- [ ] Implement authentication via `/v1/session` and the `/login` page.
-- [ ] Implement session checks and redirect to `/login` if there is no valid session.
+- [x] Implement authentication via `/v1/session` and the `/login` page.
+- [x] Implement session checks and redirect to `/login` if there is no valid session.
 - [ ] **Checkpoint #2:** everything works as intended!
   - At this point, `tusk-admin` is still empty, `tusk-backend` contains a bit more stuff (mainly to handle REST
     resources and session cookies management) and `tusk-server` contains the necessary code to make the server work.
@@ -70,6 +70,8 @@ Said that, this is a first roadmap for the server construction.
 - [ ] Move HTML/`tera` files to `/srv/http/`. 
 - [ ] After checking that everything works, implement service/daemon functionalities for Ubuntu.
 - [ ] Update CI/CD to uninstall the old version of the server and install the new version.
+- [ ] Add configuration files.
+- [ ] Run Redis and connect to it to store session cookies.
 - [ ] **Checkpoint #3:** everything works as intended!
   - At this point, `tusk-admin` finally contains the code to manage the `tusk-server` service. Also, now `tusk-server`
     is a service.
