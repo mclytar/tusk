@@ -28,7 +28,10 @@ impl TuskConfigurationFile {
         let data = std::fs::read_to_string(crate::os::CONFIGURATION_FILE_PATH)?;
         let file = match toml::from_str(&data) {
             Ok(f) => f,
-            Err(_) => panic!("I don't know how to handle this error yet.")
+            Err(e) => {
+                error!("{e}");
+                panic!("I don't know how to handle this error yet.")
+            }
         };
 
         Ok(file)
