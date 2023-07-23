@@ -29,8 +29,7 @@ impl TuskConfigurationFile {
         let file = match toml::from_str(&data) {
             Ok(f) => f,
             Err(e) => {
-                error!("{e}");
-                panic!("I don't know how to handle this error yet.")
+                panic!("Error: {e}\nI don't know how to handle this error yet.")
             }
         };
 
