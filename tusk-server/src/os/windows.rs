@@ -1,7 +1,5 @@
 use std::{
     ffi::OsString,
-    sync::mpsc,
-    thread,
 };
 use std::time::Duration;
 use windows_service::{
