@@ -1,5 +1,7 @@
-mod gui;
 mod api;
+mod error;
+mod gui;
+mod os;
 
 use std::sync::{Arc, RwLock};
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
@@ -9,6 +11,11 @@ use actix_web::web::ServiceConfig;
 #[allow(unused)] use log::{error, warn, info, debug, trace};
 use simple_logger::SimpleLogger;
 use tera::Tera;
+
+fn main() -> std::io::Result<()> {
+    os::run().unwrap();
+    Ok(())
+}
 
 fn configure(cfg: &mut ServiceConfig) {
     // Configure API
@@ -56,12 +63,7 @@ impl Default for TuskConfiguration {
     }
 }
 
-fn main() -> std::io::Result<()> {
-    server_main()
-}
-
-#[actix_web::main]
-async fn server_main() -> std::io::Result<()> {
+pub fn server_spawn() -> std::io::Result<actix_web::dev::Server> {
     SimpleLogger::new().init()
         .expect("a functioning logger");
 
@@ -70,7 +72,7 @@ async fn server_main() -> std::io::Result<()> {
     info!("Dummy configuration loaded.");
 
     info!("Starting server...");
-    HttpServer::new(move || App::new()
+    let server = HttpServer::new(move || App::new()
         .app_data(config.to_data())
         .wrap(SessionMiddleware::builder(CookieSessionStore::default(), Key::from(&[0; 64]))
             .cookie_secure(false)
@@ -78,8 +80,14 @@ async fn server_main() -> std::io::Result<()> {
         ).wrap(Logger::default())
         .configure(configure)
     ).bind(("0.0.0.0", 80))?
-        .run()
-        .await
+        .run();
+
+    Ok(server)
+}
+
+#[actix_web::main]
+async fn server_run(server: actix_web::dev::Server) -> std::io::Result<()> {
+    server.await
 }
 
 #[cfg(test)]

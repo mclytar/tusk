@@ -13,4 +13,8 @@ log = { version = "0.4", features = ["std", "serde"] }
 serde = { version = "1", features = ["derive"] }
 simple_logger = "4"
 tera = "1"
+tokio = "1"
 tusk-derive = { path = "../tusk-derive" }
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.6"

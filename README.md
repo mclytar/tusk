@@ -60,13 +60,13 @@ Said that, this is a first roadmap for the server construction.
   - At this point, `tusk-admin` is still empty, `tusk-backend` contains a bit more stuff (mainly to handle REST
     resources and session cookies management) and `tusk-server` contains the necessary code to make the server work.
   - Now we need to start implementing the main things and, for this, we need to refresh the `tera` templates a lot.
-- [ ] Implement service/daemon functionalities for Windows.
-- [ ] Implement the following commands:
-  - [ ] `tusk install` -- Installs the server service/daemon.
-  - [ ] `tusk start` -- Starts the server service/daemon.
-  - [ ] `tusk stop` -- Stops the server service/daemon.
-  - [ ] `tusk uninstall` -- Uninstalls the server service/daemon.
-  - [ ] `tusk refresh` -- Reloads the `tera` template pages.
+- [x] Implement service/daemon functionalities for Windows.
+- [x] Implement the following commands:
+  - [x] `tusk install` -- Installs the server service/daemon.
+  - [x] `tusk start` -- Starts the server service/daemon.
+  - [x] `tusk stop` -- Stops the server service/daemon.
+  - [x] `tusk uninstall` -- Uninstalls the server service/daemon.
+  - [x] `tusk reload` -- Reloads the `tera` template pages.
 - [ ] Move HTML/`tera` files to `/srv/http/`. 
 - [ ] After checking that everything works, implement service/daemon functionalities for Ubuntu.
 - [ ] Update CI/CD to uninstall the old version of the server and install the new version.
