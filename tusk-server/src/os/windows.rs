@@ -21,6 +21,11 @@ pub fn run() -> Result<()> {
     service_dispatcher::start(SERVICE_NAME, ffi_service_main)
 }
 
+pub fn initialize_logger() {
+    winlog::init("Tusk Server")
+        .expect("a functioning logger");
+}
+
 pub fn tusk_server_main(_arguments: Vec<OsString>) {
     if let Err(_) = run_service() {
         // TODO
@@ -69,9 +74,4 @@ pub fn run_service() -> Result<()> {
     })?;
 
     Ok(())
-}
-
-pub fn initialize_logger() {
-    winlog::init("Tusk Server")
-        .expect("a functioning logger");
 }
