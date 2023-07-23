@@ -56,8 +56,12 @@ impl Default for TuskConfiguration {
     }
 }
 
+fn main() -> std::io::Result<()> {
+    server_main()
+}
+
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn server_main() -> std::io::Result<()> {
     SimpleLogger::new().init()
         .expect("a functioning logger");
 
