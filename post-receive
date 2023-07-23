@@ -16,7 +16,7 @@ do
         ~/.cargo/bin/cargo build
         # If compilation is successful, run the installation script.
         status=$?
-        if [ status -eq 0 ];
+        if [ $status -eq 0 ];
         then
             /home/mclytar/install/tusk/install
         else
