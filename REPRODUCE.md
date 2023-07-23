@@ -1,6 +1,6 @@
 # Steps to reproduce server configuration
 
-### Git CI/CD
+## Git CI/CD
 
 Set up the bare repository on the server machine:
 ```shell
@@ -39,4 +39,14 @@ $ chmod +x hooks/post-receive
 $ exit
 $ git remote add remote_name ssh://user@server.com/~/tusk.git
 $ git push remote_name main
+```
+
+## Compilation
+
+The following software is necessary to correctly compile Tusk.
+
+### `pkg-config`
+Install `pkg-config` by issuing the following command.
+```shell
+$ sudo apt install pkgconf
 ```
