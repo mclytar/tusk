@@ -4,22 +4,22 @@ echo "Removing old version of Tusk..."
 
 if command -v tusk &> /dev/null
 then
-  sudo tusk stop
-  sudo tusk uninstall
+  tusk stop
+  tusk uninstall
   rm /usr/bin/tusk
   rm /usr/bin/tusk-server
 fi
 
-sudo rm -rf /srv/*
+rm -rf /srv/*
 
 echo "Installing new version..."
 
-sudo install /home/mclytar/deploy/tusk/target/debug/tusk-admin /usr/bin/tusk
-sudo install /home/mclytar/deploy/tusk/target/debug/tusk-server /usr/bin/server
+cp /home/mclytar/deploy/tusk/target/debug/tusk /usr/bin/
+cp /home/mclytar/deploy/tusk/target/debug/tusk-server /usr/bin/
 
-sudo cp -r /home/mclytar/deploy/tusk/_srv/* /srv/
+cp -r /home/mclytar/deploy/tusk/_srv/* /srv/
 
-sudo tusk install
-sudo tusk start
+tusk install
+tusk start
 
 echo "Done!"
