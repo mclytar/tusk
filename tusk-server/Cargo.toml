@@ -18,6 +18,7 @@ tusk-derive = { path = "../tusk-derive" }
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.26"
+systemd = "0.10"
 systemd-journal-logger = "1"
 
 [target.'cfg(windows)'.dependencies]
