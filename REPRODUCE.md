@@ -2,44 +2,34 @@
 
 ## Git CI/CD
 
-Set up the bare repository on the server machine:
+Set up the bare repository on the server machine and push the current one to the remote one:
 ```shell
 $ ssh user@server.com
 $ mkdir tusk.git
 $ cd tusk.git
 $ git init --bare
 $ git branch -m main
-$ nano hooks/post-receive
-```
-Use this as a post-receive hook:
-```shell
-#!/bin/bash
-TARGET="/home/mclytar/deploy/tusk/"
-GIT_DIR="/home/mclytar/tusk.git"
-BRANCH="main"
-
-while read oldrev newrev ref
-do
-    if [ "$ref" = "refs/heads/$BRANCH" ];
-    then
-        echo "Ref $ref received. Deploying ${BRANCH} branch to production..."
-        git --work-tree=$TARGET --git-dir=$GIT_DIR checkout -f
-        # Build the executables.
-        cd $TARGET
-        ~/.cargo/bin/cargo build
-        # Insert here the installation command.
-    else
-        echo "Ref $ref received. Doing nothing: only the ${BRANCH} branch may be deployed."
-    fi  
-done
-```
-Finally, make the file executable and return to the shell and add the remote:
-```shell
-$ chmod +x hooks/post-receive
 $ exit
 $ git remote add remote_name ssh://user@server.com/~/tusk.git
 $ git push remote_name main
 ```
+Then, log again into the remote machine, unpack the repository and complete the setup:
+```shell
+$ ssh user@server.com
+$ mkdir deploy/tusk
+$ mkdir install/tusk
+$ git --work-tree=./deploy/tusk/ --git-dir=./tusk.git checkout -f
+$ cp deploy/tusk/post-receive tusk.git/hooks/
+$ cp deploy/tusk/install install/tusk/
+$ chmod +x tusk.git/hooks/post-receive
+$ chmod +x install/tusk/install 
+```
+Finally, enable the `install` script to be run as root without asking password.
+Namely, add the following line using `visudo`:
+```
+user ALL=(ALL) NOPASSWD: /home/user/install/tusk/install
+```
+**Tip:** to run `visudo` with nano, use `export EDITOR=nano;`
 
 ## Compilation
 
