@@ -41,7 +41,7 @@ The following software is necessary to correctly compile Tusk.
 
 ### Packages
 ```shell
-$ sudo apt install pkgconf libsystemd-dev
+$ sudo apt install pkgconf libsystemd-dev libssl-dev
 ```
 
 ## Settings
