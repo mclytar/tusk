@@ -8,7 +8,7 @@ use crate::TuskConfiguration;
 pub struct GUIResource;
 impl GUIResource {
     async fn get(session: Session, data: web::Data<TuskConfiguration>, path: web::Path<String>) -> impl Responder {
-        let data = data.as_ref();
+        let tusk = data.as_ref();
         let mut path = path.into_inner();
         if path.is_empty() { path = String::from("index"); }
 
@@ -25,9 +25,9 @@ impl GUIResource {
             };
         }
 
-        let context = tera::Context::new();
+        let context = tusk.tera_context();
 
-        let tera = match data.tera.read() {
+        let tera = match tusk.tera.read() {
             Ok(t) => t,
             Err(e) => {
                 log::error!("Poison error: {e}");

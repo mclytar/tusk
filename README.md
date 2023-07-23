@@ -73,7 +73,7 @@ Said that, this is a first roadmap for the server construction.
     confirm and revert the changes.
 - [x] After checking that everything works, implement service/daemon functionalities for Ubuntu.
 - [x] Update CI/CD to uninstall the old version of the server and install the new version.
-- [ ] Add configuration files.
+- [x] Add configuration files.
 - [ ] Run Redis and connect to it to store session cookies.
 - [ ] **Checkpoint #3:** everything works as intended!
   - At this point, `tusk-admin` finally contains the code to manage the `tusk-server` service. Also, now `tusk-server`

@@ -14,6 +14,7 @@ serde = { version = "1", features = ["derive"] }
 simple_logger = "4"
 tera = "1"
 tokio = "1"
+toml = "0.7"
 tusk-derive = { path = "../tusk-derive" }
 
 [target.'cfg(unix)'.dependencies]

@@ -2,83 +2,42 @@ mod api;
 mod error;
 mod gui;
 mod os;
+mod settings;
 
-use std::sync::{Arc, RwLock};
+#[allow(unused)] use log::{error, warn, info, debug, trace};
+
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
 use actix_web::{App, guard, HttpServer, web, cookie::Key};
 use actix_web::middleware::Logger;
-use actix_web::web::ServiceConfig;
-#[allow(unused)] use log::{error, warn, info, debug, trace};
-use simple_logger::SimpleLogger;
-use tera::Tera;
+use settings::TuskConfiguration;
+use crate::settings::TuskConfigurationFile;
 
 fn main() -> std::io::Result<()> {
     os::run().unwrap();
     Ok(())
 }
 
-fn configure(cfg: &mut ServiceConfig) {
-    // Configure API
-    cfg.service(
-        web::scope("/v1")
-            //.guard(guard::Host("api.localhost"))
-            .configure(api::configure)
-    );
-    // Configure GUI
-    cfg.service(
-        web::scope("")
-            //.guard(guard::Host("localhost"))
-            .configure(gui::configure)
-    );
-}
-
-#[derive(Clone, Debug)]
-pub struct TuskConfiguration {
-    tera: Arc<RwLock<Tera>>
-}
-impl TuskConfiguration {
-    pub fn to_data(&self) -> web::Data<TuskConfiguration> {
-        web::Data::new(self.clone())
-    }
-}
-impl Default for TuskConfiguration {
-    fn default() -> Self {
-        let tera = match Tera::new("/srv/http/**/*.tera") {
-            Ok(t) => t,
-            Err(e) => {
-                error!("Cannot load Tera templates: {}", e);
-                ::std::process::exit(1);
-            }
-        };
-
-        for template in tera.get_template_names() {
-            info!("Loaded Tera template {template}");
-        }
-
-        let tera = Arc::new(RwLock::new(tera));
-
-        TuskConfiguration {
-            tera
-        }
-    }
-}
-
 pub fn server_spawn() -> std::io::Result<actix_web::dev::Server> {
     os::initialize_logger();
 
-    log::set_max_level(log::LevelFilter::Debug);
-    let config = TuskConfiguration::default();
-    info!("Dummy configuration loaded.");
+    let tusk = TuskConfigurationFile::import()?
+        .into_tusk();
 
     info!("Starting server...");
     let server = HttpServer::new(move || App::new()
-        .app_data(config.to_data())
+        .app_data(tusk.to_data())
         .wrap(SessionMiddleware::builder(CookieSessionStore::default(), Key::from(&[0; 64]))
+            .cookie_domain(Some(tusk.www_domain().to_owned()))
             .cookie_secure(false)
             .build()
         ).wrap(Logger::default())
-        .configure(configure)
-    ).bind(("0.0.0.0", 80))?
+        .service(web::scope("/v1")
+            .guard(guard::Host(tusk.api_domain()))
+            .configure(api::configure)
+        ).service(web::scope("")
+            .guard(guard::Host(tusk.www_domain()))
+            .configure(gui::configure)
+    )).bind(("0.0.0.0", 80))?
         .run();
 
     Ok(server)

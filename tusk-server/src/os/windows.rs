@@ -14,6 +14,7 @@ use windows_service::{
 
 const SERVICE_NAME: &str = "tusk-server";
 const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
+pub const CONFIGURATION_FILE_PATH: &str = "C:\\ProgramData\\Tusk\\tusk.toml";
 
 define_windows_service!(ffi_service_main, tusk_server_main);
 

@@ -20,9 +20,11 @@ $ mkdir deploy
 $ mkdir deploy/tusk
 $ mkdir install
 $ mkdir install/tusk
+$ sudo mkdir /etc/tusk
 $ git --work-tree=./deploy/tusk/ --git-dir=./tusk.git checkout -f
 $ cp deploy/tusk/post-receive tusk.git/hooks/
 $ cp deploy/tusk/install install/tusk/
+$ cp deploy/tusk/tusk.toml /etc/tusk/
 $ chmod +x tusk.git/hooks/post-receive
 $ chmod +x install/tusk/install 
 ```
@@ -42,3 +44,6 @@ The following software is necessary to correctly compile Tusk.
 $ sudo apt install pkgconf libsystemd-dev
 ```
 
+## Settings
+
+Settings can be found and edited at `/etc/tusk/tusk.toml`.
