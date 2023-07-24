@@ -5,6 +5,7 @@ use std::sync::{Arc, RwLock};
 use actix_web::web;
 use serde::Deserialize;
 use tera::Tera;
+use crate::error::Result;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct RedisConfigurationSection {
@@ -24,27 +25,15 @@ pub struct TuskConfigurationFile {
     pub tusk: TuskConfigurationSection
 }
 impl TuskConfigurationFile {
-    pub fn import() -> std::io::Result<TuskConfigurationFile> {
+    pub fn import() -> Result<TuskConfigurationFile> {
         let data = std::fs::read_to_string(crate::os::CONFIGURATION_FILE_PATH)?;
-        let file = match toml::from_str(&data) {
-            Ok(f) => f,
-            Err(e) => {
-                panic!("Error: {e}\nI don't know how to handle this error yet.")
-            }
-        };
+        let file = toml::from_str(&data)?;
 
         Ok(file)
     }
 
-    pub fn into_tusk(self) -> TuskConfiguration {
-        let tera = match Tera::new("/srv/http/**/*.tera") {
-            Ok(t) => t,
-            Err(e) => {
-                error!("Cannot load Tera templates: {}", e);
-                ::std::process::exit(1);
-            }
-        };
-
+    pub fn into_tusk(self) -> Result<TuskConfiguration> {
+        let tera = Tera::new("/srv/http/**/*.tera")?;
         for template in tera.get_template_names() {
             info!("Loaded Tera template {template}");
         }
@@ -66,12 +55,14 @@ impl TuskConfigurationFile {
         let TuskConfigurationSection { log_level, www_domain, api_domain } = self.tusk;
         log::set_max_level(log_level);
 
-        TuskConfiguration {
+        let config = TuskConfiguration {
             tera,
             www_domain,
             api_domain,
             session_configuration
-        }
+        };
+
+        Ok(config)
     }
 }
 

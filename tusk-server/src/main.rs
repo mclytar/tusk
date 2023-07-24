@@ -10,22 +10,26 @@ use actix_session::{SessionMiddleware};
 use actix_web::{App, guard, HttpServer, web};
 use actix_web::middleware::Logger;
 use settings::TuskConfiguration;
+
+use crate::error::Result;
 use crate::settings::TuskConfigurationFile;
 
-fn main() -> std::io::Result<()> {
-    os::run().unwrap();
-    Ok(())
+fn main() {
+    if let Err(e) = os::run() {
+        error!("{e}");
+    }
 }
 
-pub fn server_spawn() -> std::io::Result<actix_web::dev::Server> {
+pub fn server_spawn() -> Result<actix_web::dev::Server> {
     os::initialize_logger();
 
     let tusk = TuskConfigurationFile::import()?
-        .into_tusk();
+        .into_tusk()?;
 
     let redis_store = actix_web::rt::System::new().block_on(tusk.redis_store());
 
     info!("Starting server...");
+    
     let server = HttpServer::new(move || App::new()
         .app_data(tusk.to_data())
         .wrap(SessionMiddleware::builder(redis_store.clone(), tusk.session_key())

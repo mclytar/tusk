@@ -9,8 +9,10 @@ use windows_service::{
         ServiceType,
     },
     service_control_handler::{self, ServiceControlHandlerResult},
-    service_dispatcher, Result,
+    service_dispatcher,
 };
+
+use crate::error::Result;
 
 const SERVICE_NAME: &str = "tusk-server";
 const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
@@ -19,23 +21,22 @@ pub const CONFIGURATION_FILE_PATH: &str = "C:\\ProgramData\\Tusk\\tusk.toml";
 define_windows_service!(ffi_service_main, tusk_server_main);
 
 pub fn run() -> Result<()> {
-    service_dispatcher::start(SERVICE_NAME, ffi_service_main)
+    service_dispatcher::start(SERVICE_NAME, ffi_service_main)?;
+    Ok(())
 }
 
 pub fn initialize_logger() {
-    winlog::init("Tusk Server")
-        .expect("a functioning logger");
+    winlog::init("Tusk Server").unwrap();
 }
 
 pub fn tusk_server_main(_arguments: Vec<OsString>) {
-    if let Err(_) = run_service() {
-        // TODO
+    if let Err(e) = run_service() {
+        log::error!("{e}");
     }
 }
 
 pub fn run_service() -> Result<()> {
-    let server = crate::server_spawn()
-        .expect("server");
+    let server = crate::server_spawn()?;
     let handle = server.handle();
 
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
@@ -61,8 +62,7 @@ pub fn run_service() -> Result<()> {
         process_id: None
     })?;
 
-    crate::server_run(server)
-        .expect("running server instance");
+    crate::server_run(server)?;
 
     status_handle.set_service_status(ServiceStatus {
         service_type: SERVICE_TYPE,
