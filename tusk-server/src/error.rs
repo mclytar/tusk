@@ -6,8 +6,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     ConfigurationFileError(toml::de::Error),
     IOError(std::io::Error),
-    #[cfg(unix)]
-    SystemDError(systemd::Error),
     #[cfg(windows)]
     WindowsServiceError(windows_service::Error),
     TeraParseError(tera::Error),
@@ -17,8 +15,6 @@ impl Display for Error {
         match self {
             Error::ConfigurationFileError(e) => Display::fmt(e, f),
             Error::IOError(e) => Display::fmt(e, f),
-            #[cfg(unix)]
-            Error::SystemDError(e) => Display::fmt(e, f),
             #[cfg(windows)]
             Error::WindowsServiceError(e) => Display::fmt(e, f),
             Error::TeraParseError(e) => Display::fmt(e, f)
@@ -30,8 +26,6 @@ impl std::error::Error for Error {
         match self {
             Error::ConfigurationFileError(e) => Some(e),
             Error::IOError(e) => Some(e),
-            #[cfg(unix)]
-            Error::SystemDError(e) => Some(e),
             #[cfg(windows)]
             Error::WindowsServiceError(e) => Some(e),
             Error::TeraParseError(e) => Some(e)
@@ -54,13 +48,6 @@ impl From<std::io::Error> for Error {
 impl From<tera::Error> for Error {
     fn from(value: tera::Error) -> Self {
         Error::TeraParseError(value)
-    }
-}
-
-#[cfg(unix)]
-impl From<systemd::Error> for Error {
-    fn from(value: systemd::Error) -> Self {
-        Error::SystemDError(value)
     }
 }
 
