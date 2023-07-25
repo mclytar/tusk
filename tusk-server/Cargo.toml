@@ -16,6 +16,7 @@ tera = "1"
 tokio = "1"
 toml = "0.7"
 tusk-derive = { path = "../tusk-derive" }
+tusk-backend = { path = "../tusk-backend" }
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.26"

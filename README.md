@@ -78,10 +78,10 @@ Said that, this is a first roadmap for the server construction.
 - [x] **Checkpoint #3:** everything works as intended!
   - At this point, `tusk-admin` finally contains the code to manage the `tusk-server` service. Also, now `tusk-server`
     is a service.
-- [ ] Create library `tusk-database`.
+- [x] ~~Create library `tusk-database`~~ _Use the library `tusk-backend`, since it is unused so far_.
 - [ ] Install the database `tusk` on both Windows and Ubuntu Server.
-  - [ ] Implement `diesel`.
-  - [ ] Database `tusk` will initially contain a table `user` with columns `user_id`, `username`, `password`.
+  - [x] Implement `diesel`.
+  - [x] Database `tusk` will initially contain a table `user` with columns `user_id`, `username`, `password`.
 - [ ] Implement the following commands:
   - [ ] `tusk user add <username>` -- Creates a new user (asking for a password).
   - [ ] `tusk user list` -- Lists all users.

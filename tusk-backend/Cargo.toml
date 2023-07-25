@@ -6,3 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-web = "4"
+bcrypt = { version = "0.14", features = ["zeroize"] }
+diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
+log = { version = "0.4", features = ["std", "serde"] }
+secrecy = { version = "0.8.0", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+uuid = { version = "1", features = ["serde", "v4"]}

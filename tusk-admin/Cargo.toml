@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
+tusk-backend = { path = "../tusk-backend" }
 
 [target.'cfg(unix)'.dependencies]
 systemctl = "0.2"

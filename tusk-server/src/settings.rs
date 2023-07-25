@@ -8,6 +8,11 @@ use tera::Tera;
 use crate::error::Result;
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct DieselConfigurationSection {
+    pub url: String
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct RedisConfigurationSection {
     pub url: String
 }
@@ -21,6 +26,7 @@ pub struct TuskConfigurationSection {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct TuskConfigurationFile {
+    pub diesel: DieselConfigurationSection,
     pub redis: RedisConfigurationSection,
     pub tusk: TuskConfigurationSection
 }
