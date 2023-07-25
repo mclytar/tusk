@@ -39,9 +39,15 @@ user ALL=(ALL) NOPASSWD: /home/user/install/tusk/install
 
 The following software is necessary to correctly compile and run Tusk.
 
-### Packages
+### Installation
+
+The following packages are needed.
 ```shell
 $ sudo apt install pkgconf libsystemd-dev libssl-dev postgresql libsql-dev
+```
+The server process, and all of its resources, should belong to a special user `tusk`, which can be created with
+```shell
+$ sudo useradd -r -s /sbin/nologin tusk
 ```
 
 ## Settings
@@ -53,6 +59,12 @@ Settings can be found and edited at `/etc/tusk/tusk.toml`.
 First of all, we need to grant the main user access to postgres in an easy way:
 ```shell
 $ sudo -u postgres createuser -s $USER
+$ createdb
+$ psql
+```
+Similarly, we need to create the `tusk` user:
+```shell
+$ sudo -u postgres createuser -s tusk
 $ createdb
 $ psql
 ```

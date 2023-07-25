@@ -79,6 +79,7 @@ Said that, this is a first roadmap for the server construction.
   - At this point, `tusk-admin` finally contains the code to manage the `tusk-server` service. Also, now `tusk-server`
     is a service.
 - [x] ~~Create library `tusk-database`~~ _Use the library `tusk-backend`, since it is unused so far_.
+- [x] Implement privilege drop for security reasons.
 - [ ] Install the database `tusk` on both Windows and Ubuntu Server.
   - [x] Implement `diesel`.
   - [x] Database `tusk` will initially contain a table `user` with columns `user_id`, `username`, `password`.

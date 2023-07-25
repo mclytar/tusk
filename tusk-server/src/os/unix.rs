@@ -10,6 +10,16 @@ pub fn run() -> Result<()> {
 
     daemon::notify(false, [(daemon::STATE_READY, "1")].iter())?;
 
+    // Drop privileges!
+    match nix::unistd::Group::from_name("tusk")? {
+        Some(group) => nix::unistd::setgid(group.id),
+        None => Err(nix::Error::last())
+    }?;
+    match nix::unistd::User::from_name("tusk")? {
+        Some(user) => nix::unistd::setuid(user.id),
+        None => Err(nix::Error::last())
+    }?;
+
     crate::server_run(server)?;
     Ok(())
 }
