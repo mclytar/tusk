@@ -3,8 +3,10 @@ use std::sync::{Arc, RwLock};
 #[allow(unused)] use log::{error, warn, info, debug, trace};
 
 use actix_web::web;
+use diesel::{r2d2::{ConnectionManager, Pool, PooledConnection}, PgConnection};
 use serde::Deserialize;
 use tera::Tera;
+
 use crate::error::Result;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -61,10 +63,16 @@ impl TuskConfigurationFile {
         let TuskConfigurationSection { log_level, www_domain, api_domain } = self.tusk;
         log::set_max_level(log_level);
 
+        let connection_manager = ConnectionManager::new(self.diesel.url);
+        let database_pool = Pool::new(connection_manager)
+            .unwrap_or_else(|_| panic!("TODO: implement error"));
+        let database_pool = Arc::new(database_pool);
+
         let config = TuskConfiguration {
             tera,
             www_domain,
             api_domain,
+            database_pool,
             session_configuration
         };
 
@@ -84,6 +92,7 @@ pub struct TuskConfiguration {
     pub tera: Arc<RwLock<Tera>>,
     www_domain: String,
     api_domain: String,
+    database_pool: Arc<Pool<ConnectionManager<PgConnection>>>,
     session_configuration: SessionConfiguration
 }
 impl TuskConfiguration {
@@ -97,6 +106,12 @@ impl TuskConfiguration {
 
     pub fn api_domain(&self) -> &str {
         &self.api_domain
+    }
+
+    pub fn database_connect(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
+        let db_pool = self.database_pool.get()
+            .unwrap_or_else(|_| panic!("TODO: implement error"));
+        Ok(db_pool)
     }
 
     pub fn tera_context(&self) -> tera::Context {

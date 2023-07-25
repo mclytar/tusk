@@ -7,7 +7,9 @@ use windows_service::{
 };
 use windows_service::service::ServiceState;
 
-pub fn service_install() -> windows_service::Result<()> {
+use tusk_backend::error::Result;
+
+pub fn service_install() -> Result<()> {
 
     println!("Gathering information...");
 
@@ -47,7 +49,7 @@ pub fn service_install() -> windows_service::Result<()> {
     Ok(())
 }
 
-pub fn service_uninstall() -> windows_service::Result<()> {
+pub fn service_uninstall() -> Result<()> {
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -88,7 +90,7 @@ pub fn service_uninstall() -> windows_service::Result<()> {
     Ok(())
 }
 
-pub fn service_start() -> windows_service::Result<()> {
+pub fn service_start() -> Result<()> {
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -115,7 +117,7 @@ pub fn service_start() -> windows_service::Result<()> {
     Ok(())
 }
 
-pub fn service_stop() -> windows_service::Result<()> {
+pub fn service_stop() -> Result<()> {
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -142,15 +144,15 @@ pub fn service_stop() -> windows_service::Result<()> {
     Ok(())
 }
 
-pub fn service_reload() -> windows_service::Result<()> {
+pub fn service_reload() -> Result<()> {
     service_stop()?;
     service_start()?;
     Ok(())
 }
 
-pub fn print_error(e: ServiceError) {
+pub fn print_error(e: tusk_backend::error::Error) {
     match e {
-        ServiceError::Winapi(e) => println!("Cannot perform operation: {e}"),
+        tusk_backend::error::Error::WindowsServiceError(ServiceError::Winapi(e)) => println!("Cannot perform operation: {e}"),
         _ => println!("Cannot perform operation: {e}")
     }
 }

@@ -1,9 +1,7 @@
 use systemd::daemon;
 use systemd_journal_logger::JournalLog;
 
-use crate::error::Result;
-
-pub const CONFIGURATION_FILE_PATH: &str = "/etc/tusk/tusk.toml";
+use tusk_backend::error::Result;
 
 pub fn run() -> Result<()> {
     let server = crate::server_spawn()?;

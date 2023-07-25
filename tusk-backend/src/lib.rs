@@ -1,3 +1,6 @@
+pub mod config;
+pub mod error;
+pub mod os;
 pub mod resources;
 pub mod schema;
 

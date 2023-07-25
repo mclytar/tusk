@@ -1,7 +1,9 @@
 const SERVICE_FILE_CONTENTS: &'static str = include_str!("tusk.service");
 const SYSTEMD_UNIT_PATH: &'static str = "/etc/systemd/system/tusk.service";
 
-pub fn service_install() -> std::io::Result<()> {
+use tusk_backend::error::Result;
+
+pub fn service_install() -> Result<()> {
     println!("Creating unit file...");
 
     std::fs::write(SYSTEMD_UNIT_PATH, SERVICE_FILE_CONTENTS)?;
@@ -15,7 +17,7 @@ pub fn service_install() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn service_uninstall() -> std::io::Result<()> {
+pub fn service_uninstall() -> Result<()> {
     println!("Disabling unit file...");
 
     systemctl::disable("tusk.service")?;
@@ -29,7 +31,7 @@ pub fn service_uninstall() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn service_start() -> std::io::Result<()> {
+pub fn service_start() -> Result<()> {
     println!("Starting service...");
 
     systemctl::start("tusk.service")?;
@@ -39,7 +41,7 @@ pub fn service_start() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn service_stop() -> std::io::Result<()> {
+pub fn service_stop() -> Result<()> {
     println!("Stopping service...");
 
     systemctl::stop("tusk.service")?;
@@ -49,12 +51,8 @@ pub fn service_stop() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn service_reload() -> std::io::Result<()> {
+pub fn service_reload() -> Result<()> {
     service_stop()?;
     service_start()?;
     Ok(())
-}
-
-pub fn print_error(e: std::io::Error) {
-    println!("Cannot perform operation: {e}");
 }

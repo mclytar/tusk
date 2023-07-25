@@ -2,8 +2,8 @@ use actix_session::Session;
 use actix_web::{HttpResponse, Responder};
 use actix_web::http::header::LOCATION;
 use actix_web::web::{self, ServiceConfig};
+use tusk_backend::config::TuskConfiguration;
 use tusk_derive::rest_resource;
-use crate::TuskConfiguration;
 
 pub struct GUIResource;
 impl GUIResource {

@@ -6,10 +6,24 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-session = { version = "0.7", features = ["cookie-session", "redis-rs-tls-session"] }
 actix-web = "4"
 bcrypt = { version = "0.14", features = ["zeroize"] }
 diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
 log = { version = "0.4", features = ["std", "serde"] }
 secrecy = { version = "0.8.0", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
+tera = "1"
+toml = "0.7"
 uuid = { version = "1", features = ["serde", "v4"]}
+
+[target.'cfg(unix)'.dependencies]
+nix = "0.26"
+systemctl = "0.2"
+systemd = "0.10"
+systemd-journal-logger = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.6"
+windows-sys = "0.48"
+winlog = "0.2"

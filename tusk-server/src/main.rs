@@ -1,18 +1,15 @@
 mod api;
-mod error;
 mod gui;
 mod os;
-mod settings;
 
-#[allow(unused)] use log::{error, warn, info, debug, trace};
+#[allow(unused)] use log::{debug, error, info, trace, warn};
 
-use actix_session::{SessionMiddleware};
+use actix_session::SessionMiddleware;
 use actix_web::{App, guard, HttpServer, web};
 use actix_web::middleware::Logger;
-use settings::TuskConfiguration;
 
-use crate::error::Result;
-use crate::settings::TuskConfigurationFile;
+use tusk_backend::error::Result;
+use tusk_backend::config::TuskConfigurationFile;
 
 fn main() {
     if let Err(e) = os::run() {
@@ -56,7 +53,7 @@ async fn server_run(server: actix_web::dev::Server) -> std::io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{body, http, App, test};
+    use actix_web::test;
 
     #[actix_web::test]
     async fn test_get_() {

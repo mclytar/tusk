@@ -1,5 +1,6 @@
+pub mod error;
 mod os;
-
+mod user;
 
 use clap::{Parser, Subcommand};
 
@@ -21,7 +22,9 @@ enum Command {
     /// Stops Tusk as a service/daemon.
     Stop,
     /// Reloads the configuration.
-    Reload
+    Reload,
+    /// User management commands.
+    User(user::User)
 }
 
 fn main() {
@@ -33,6 +36,7 @@ fn main() {
         Command::Start => os::service_start(),
         Command::Stop => os::service_stop(),
         Command::Reload => os::service_reload(),
+        Command::User(args) => user::main(args)
     };
 
     if let Err(e) = result {

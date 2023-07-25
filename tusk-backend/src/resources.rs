@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use secrecy::{ExposeSecret, Secret, zeroize::DefaultIsZeroes};
+use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -13,10 +13,10 @@ pub struct User {
     pub password: String
 }
 impl User {
-    pub fn create<U: AsRef<str>, P: AsRef<str> + DefaultIsZeroes>(db_connection: &mut PgConnection, username: U, password: Secret<P>) -> diesel::QueryResult<User> {
+    pub fn create<U: AsRef<str>>(db_connection: &mut PgConnection, username: U, password: Secret<String>) -> diesel::QueryResult<User> {
         use crate::schema::user;
         let username = username.as_ref();
-        let password = password.expose_secret().as_ref();
+        let password = password.expose_secret();
 
         let password = bcrypt::hash(password, bcrypt::DEFAULT_COST)
             .unwrap();
@@ -51,8 +51,8 @@ impl User {
             .load(db_connection)
     }
 
-    pub fn verify_password<P: AsRef<str> + DefaultIsZeroes>(&self, password: &Secret<P>) -> bool {
-        let password = password.expose_secret().as_ref();
+    pub fn verify_password(&self, password: &Secret<String>) -> bool {
+        let password = password.expose_secret();
         bcrypt::verify(password, &self.password)
             .unwrap()
     }
