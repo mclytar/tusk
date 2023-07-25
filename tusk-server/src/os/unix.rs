@@ -12,11 +12,11 @@ pub fn run() -> Result<()> {
 
     // Drop privileges!
     match nix::unistd::Group::from_name("tusk")? {
-        Some(group) => nix::unistd::setgid(group.id),
+        Some(group) => nix::unistd::setgid(group.gid),
         None => Err(nix::Error::last())
     }?;
     match nix::unistd::User::from_name("tusk")? {
-        Some(user) => nix::unistd::setuid(user.id),
+        Some(user) => nix::unistd::setuid(user.uid),
         None => Err(nix::Error::last())
     }?;
 
