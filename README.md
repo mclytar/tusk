@@ -83,10 +83,10 @@ Said that, this is a first roadmap for the server construction.
 - [x] Install the database `tusk` on both Windows and Ubuntu Server.
   - [x] Implement `diesel`.
   - [x] Database `tusk` will initially contain a table `user` with columns `user_id`, `username`, `password`.
-- [ ] Implement the following commands:
+- [x] Implement the following commands:
   - [x] `tusk user add <username>` -- Creates a new user (asking for a password).
   - [x] `tusk user list` -- Lists all users.
-  - [ ] `tusk user delete <username>` -- Delete the user `<username>`.
+  - [x] `tusk user delete <username>` -- Delete the user `<username>`.
 - [ ] Properly implement `/v1/session`.
 - [ ] Write a script to create a dummy certificate; the dummy certificate will not be authenticated, but this is not
   important at this stage. The certificate creation and usage will match the specification of the `acme-client` crate.

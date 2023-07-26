@@ -6,7 +6,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     ConfigurationFileError(toml::de::Error),
     DatabaseConnectionError(diesel::prelude::ConnectionError),
+    DatabaseQueryError(diesel::result::Error),
     IOError(std::io::Error),
+    R2D2Error(r2d2::Error),
     TeraParseError(tera::Error),
     #[cfg(unix)]
     UnixError(nix::errno::Errno),
@@ -18,7 +20,9 @@ impl Display for Error {
         match self {
             Error::ConfigurationFileError(e) => Display::fmt(e, f),
             Error::DatabaseConnectionError(e) => Display::fmt(e, f),
+            Error::DatabaseQueryError(e) => Display::fmt(e, f),
             Error::IOError(e) => Display::fmt(e, f),
+            Error::R2D2Error(e) => Display::fmt(e, f),
             Error::TeraParseError(e) => Display::fmt(e, f),
             #[cfg(unix)]
             Error::UnixError(e) => Display::fmt(e, f),
@@ -32,7 +36,9 @@ impl std::error::Error for Error {
         match self {
             Error::ConfigurationFileError(e) => Some(e),
             Error::DatabaseConnectionError(e) => Some(e),
+            Error::DatabaseQueryError(e) => Some(e),
             Error::IOError(e) => Some(e),
+            Error::R2D2Error(e) => Some(e),
             Error::TeraParseError(e) => Some(e),
             #[cfg(unix)]
             Error::UnixError(e) => Some(e),
@@ -54,9 +60,21 @@ impl From<diesel::prelude::ConnectionError> for Error {
     }
 }
 
+impl From<diesel::result::Error> for Error {
+    fn from(value: diesel::result::Error) -> Self {
+        Error::DatabaseQueryError(value)
+    }
+}
+
 impl From<std::io::Error> for Error {
     fn from(value: std::io::Error) -> Self {
         Error::IOError(value)
+    }
+}
+
+impl From<r2d2::Error> for Error {
+    fn from(value: r2d2::Error) -> Self {
+        Error::R2D2Error(value)
     }
 }
 

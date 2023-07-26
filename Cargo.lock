@@ -2591,6 +2591,7 @@ dependencies = [
  "diesel",
  "log",
  "nix",
+ "r2d2",
  "secrecy",
  "serde",
  "systemctl",

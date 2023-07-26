@@ -64,8 +64,7 @@ impl TuskConfigurationFile {
         log::set_max_level(log_level);
 
         let connection_manager = ConnectionManager::new(self.diesel.url);
-        let database_pool = Pool::new(connection_manager)
-            .unwrap_or_else(|_| panic!("TODO: implement error"));
+        let database_pool = Pool::new(connection_manager)?;
         let database_pool = Arc::new(database_pool);
 
         let config = TuskConfiguration {
@@ -109,8 +108,7 @@ impl TuskConfiguration {
     }
 
     pub fn database_connect(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
-        let db_pool = self.database_pool.get()
-            .unwrap_or_else(|_| panic!("TODO: implement error"));
+        let db_pool = self.database_pool.get()?;
         Ok(db_pool)
     }
 

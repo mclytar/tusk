@@ -19,7 +19,12 @@ pub enum UserCommand {
         username: Option<String>
     },
     List,
-    Delete,
+    Delete {
+        /// Name of the user.
+        ///
+        /// If omitted, will be asked.
+        username: Option<String>
+    },
 }
 
 #[derive(Parser, Debug)]
@@ -34,7 +39,7 @@ pub fn main(args: User) -> Result<()> {
     match args.command {
         UserCommand::Add { username } => add(username),
         UserCommand::List => list(),
-        UserCommand::Delete => delete()
+        UserCommand::Delete { username } => delete(username)
     }
 }
 
@@ -83,6 +88,23 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 
-pub fn delete() -> Result<()> {
-    todo!()
+pub fn delete(username: Option<String>) -> Result<()> {
+    let username = if let Some(username) = username {
+        username
+    } else {
+        dialoguer::Input::new()
+            .with_prompt("Specify username")
+            .interact()?
+    };
+
+    let tusk = TuskConfigurationFile::import()?
+        .into_tusk()?;
+
+    let mut db_connection = tusk.database_connect()?;
+
+    let deleted = tusk_backend::resources::User::delete_by_username(&mut db_connection, username)?;
+
+    println!("Deleted {deleted} user");
+
+    Ok(())
 }
