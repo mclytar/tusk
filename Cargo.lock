@@ -2573,6 +2573,7 @@ dependencies = [
  "clap",
  "console",
  "dialoguer",
+ "nix",
  "secrecy",
  "systemctl",
  "tusk-backend",

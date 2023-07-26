@@ -56,3 +56,7 @@ pub fn service_reload() -> Result<()> {
     service_start()?;
     Ok(())
 }
+
+pub fn print_error(e: tusk_backend::error::Error) {
+    println!("Cannot perform operation: {e}")
+}
