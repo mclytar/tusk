@@ -60,11 +60,9 @@ First of all, we need to grant the main user access to postgres in an easy way:
 ```shell
 $ sudo -u postgres createuser -s $USER
 $ createdb
-$ psql
 ```
 Similarly, we need to create the `tusk` user:
 ```shell
-$ sudo -u postgres createuser -s tusk
-$ createdb
-$ psql
+$ sudo -u postgres createuser -s tusk -P
+$ createdb -O tusk tusk
 ```
