@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 pub type Result<T> = std::result::Result<T, Error>;
+pub use diesel::result::Error as DieselQueryError;
 
 #[derive(Debug)]
 pub enum Error {

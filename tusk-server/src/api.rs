@@ -1,8 +1,12 @@
 use actix_session::Session;
 use actix_web::{HttpResponse, Responder};
 use actix_web::web::{self, ServiceConfig};
-use log::{error, info};
+use log::{error, info, warn};
+use secrecy::Secret;
 use serde::{Serialize, Deserialize};
+use tusk_backend::config::TuskData;
+use tusk_backend::error::Error;
+use tusk_backend::resources;
 use tusk_derive::rest_resource;
 
 #[derive(Deserialize)]
@@ -33,20 +37,45 @@ impl SessionResource {
         HttpResponse::Ok().json(SessionJsonData { username })
     }
 
-    async fn post(session: Session, form: web::Form<SessionFormData>) -> impl Responder {
+    async fn post(tusk: TuskData, session: Session, form: web::Form<SessionFormData>) -> impl Responder {
         let form = form.into_inner();
-        if &form.username.to_lowercase() != "dummy" || &form.password != "dummy" {
-            info!("Failed login attempty for user `dummy`");
+
+        let mut db_connection = match tusk.database_connect() {
+            Ok(db_conn) => db_conn,
+            Err(e) => {
+                error!("{e}");
+                return HttpResponse::InternalServerError().finish();
+            }
+        };
+
+        let username = form.username;
+        let password = form.password;
+
+        let user = match resources::User::read_by_username(&mut db_connection, &username) {
+            Ok(user) => user,
+            Err(Error::DatabaseQueryError(tusk_backend::error::DieselQueryError::NotFound)) => {
+                // TODO: implement fake password verification.
+                warn!("Failed login attempt for user `{username}`");
+                return HttpResponse::Unauthorized().finish();
+            },
+            Err(e) => {
+                error!("{e}");
+                return HttpResponse::InternalServerError().finish();
+            }
+        };
+
+        if !user.verify_password(&Secret::new(password)) {
+            warn!("Failed login attempt for user `{username}`");
             return HttpResponse::Unauthorized().finish();
         }
 
         session.renew();
-        if let Err(e) = session.insert("username", "dummy") {
+        if let Err(e) = session.insert("username", username.clone()) {
             error!("{e}");
             return HttpResponse::InternalServerError().finish();
         }
 
-        log::info!("User {} logged in", form.username);
+        info!("User {username} logged in");
 
         HttpResponse::Created().finish()
     }

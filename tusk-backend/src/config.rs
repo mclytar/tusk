@@ -9,6 +9,8 @@ use tera::Tera;
 
 use crate::error::Result;
 
+pub type TuskData = web::Data<TuskConfiguration>;
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct DieselConfigurationSection {
     pub url: String

@@ -2623,6 +2623,7 @@ dependencies = [
  "actix-web",
  "log",
  "nix",
+ "secrecy",
  "serde",
  "simple_logger",
  "systemd",
