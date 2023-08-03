@@ -10,6 +10,7 @@ actix-session = { version = "0.7", features = ["cookie-session", "redis-rs-tls-s
 actix-web = "4"
 bcrypt = { version = "0.14", features = ["zeroize"] }
 diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
+diesel_migrations = "2"
 log = { version = "0.4", features = ["std", "serde"] }
 r2d2 = "0.8"
 rustls = "0.20.8"

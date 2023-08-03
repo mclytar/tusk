@@ -9,6 +9,7 @@ pub enum Error {
     DatabaseConnectionError(diesel::prelude::ConnectionError),
     DatabaseQueryError(diesel::result::Error),
     IOError(std::io::Error),
+    MigrationError(Box<dyn std::error::Error + Send + Sync>),
     R2D2Error(r2d2::Error),
     RustlsError(rustls::Error),
     TeraParseError(tera::Error),
@@ -17,6 +18,11 @@ pub enum Error {
     #[cfg(windows)]
     WindowsServiceError(windows_service::Error),
 }
+impl Error {
+    pub fn from_migration_error(e: Box<dyn std::error::Error + Send + Sync>) -> Error {
+        Error::MigrationError(e)
+    }
+}
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -24,6 +30,7 @@ impl Display for Error {
             Error::DatabaseConnectionError(e) => Display::fmt(e, f),
             Error::DatabaseQueryError(e) => Display::fmt(e, f),
             Error::IOError(e) => Display::fmt(e, f),
+            Error::MigrationError(e) => Display::fmt(e, f),
             Error::R2D2Error(e) => Display::fmt(e, f),
             Error::RustlsError(e) => Display::fmt(e, f),
             Error::TeraParseError(e) => Display::fmt(e, f),
@@ -41,6 +48,7 @@ impl std::error::Error for Error {
             Error::DatabaseConnectionError(e) => Some(e),
             Error::DatabaseQueryError(e) => Some(e),
             Error::IOError(e) => Some(e),
+            Error::MigrationError(e) => Some(e.as_ref()),
             Error::R2D2Error(e) => Some(e),
             Error::RustlsError(e) => Some(e),
             Error::TeraParseError(e) => Some(e),

@@ -26,6 +26,7 @@ pub fn server_spawn() -> Result<actix_web::dev::Server> {
     let redis_store = actix_web::rt::System::new().block_on(tusk.redis_store());
     info!("Connected to Redis ");
 
+    tusk.apply_migrations()?;
     let config = tusk.tls_config();
 
     let server = HttpServer::new(move || App::new()

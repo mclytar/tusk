@@ -6,10 +6,11 @@ use std::sync::{Arc, RwLock};
 
 use actix_web::web;
 use diesel::{r2d2::{ConnectionManager, Pool, PooledConnection}, PgConnection};
+use diesel_migrations::{embed_migrations, MigrationHarness};
 use serde::Deserialize;
 use tera::Tera;
 
-use crate::error::Result;
+use crate::error::{Error, Result};
 
 pub type TuskData = web::Data<TuskConfiguration>;
 
@@ -157,6 +158,29 @@ impl TuskConfiguration {
     pub fn database_connect(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
         let db_pool = self.database_pool.get()?;
         Ok(db_pool)
+    }
+
+    pub fn apply_migrations(&self) -> Result<()> {
+        const MIGRATIONS: diesel_migrations::EmbeddedMigrations = embed_migrations!("../migrations");
+
+        let mut db_connection = self.database_connect()?;
+
+        let pending_migrations_count = db_connection.pending_migrations(MIGRATIONS)
+            .map_err(Error::from_migration_error)?
+            .len();
+
+        if pending_migrations_count > 0 {
+            info!("Found {pending_migrations_count} migration(s)");
+
+            db_connection.run_pending_migrations(MIGRATIONS)
+                .map_err(Error::from_migration_error)?;
+
+            info!("Applied {pending_migrations_count} migration(s)");
+        } else {
+            info!("No pending migrations found")
+        }
+
+        Ok(())
     }
 
     pub fn tera_context(&self) -> tera::Context {
