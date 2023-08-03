@@ -2,8 +2,6 @@ mod api;
 mod gui;
 mod os;
 
-use std::fs::File;
-use std::io::BufReader;
 #[allow(unused)] use log::{debug, error, info, trace, warn};
 
 use actix_session::SessionMiddleware;
@@ -24,47 +22,12 @@ pub fn server_spawn() -> Result<actix_web::dev::Server> {
 
     let tusk = TuskConfigurationFile::import()?
         .into_tusk()?;
-    let redis_store = actix_web::rt::System::new().block_on(tusk.redis_store());
-
     info!("Configuration loaded");
+    let redis_store = actix_web::rt::System::new().block_on(tusk.redis_store());
+    info!("Connected to Redis ");
 
-    #[cfg(windows)]
-    let file = File::open("C:\\ProgramData\\Tusk\\tusk.crt")?;
-    #[cfg(unix)]
-    let file = File::open("/etc/tusk/domains/server-dev.local/cert.pem")?;
-    let mut reader = BufReader::new(file);
-    let certs: Vec<_> = rustls_pemfile::certs(&mut reader)?
-        .into_iter()
-        .map(rustls::Certificate)
-        .collect();
+    let config = tusk.tls_config();
 
-    info!("Found {} certificates.", certs.len());
-
-    #[cfg(windows)]
-    let file = File::open("C:\\ProgramData\\Tusk\\tusk.key")?;
-    #[cfg(unix)]
-    let file = File::open("/etc/tusk/domains/server-dev.local/key.pem")?;
-    let mut reader = BufReader::new(file);
-    let keys: Vec<_> = rustls_pemfile::pkcs8_private_keys(&mut reader)?
-        .into_iter()
-        .map(rustls::PrivateKey)
-        .collect();
-
-    info!("Found {} keys, using the first one available.", keys.len());
-
-    let key = keys.into_iter()
-        .next()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No key in file 'tusk.key'."))?;
-
-    info!("Key file loaded");
-
-    let config = rustls::ServerConfig::builder()
-        .with_safe_defaults()
-        .with_no_client_auth()
-        .with_single_cert(certs, key)?;
-
-    info!("Starting server...");
-    
     let server = HttpServer::new(move || App::new()
         .app_data(tusk.to_data())
         .wrap(SessionMiddleware::builder(redis_store.clone(), tusk.session_key())

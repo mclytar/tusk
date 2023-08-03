@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::BufReader;
 use std::sync::{Arc, RwLock};
 
 #[allow(unused)] use log::{error, warn, info, debug, trace};
@@ -10,6 +12,45 @@ use tera::Tera;
 use crate::error::Result;
 
 pub type TuskData = web::Data<TuskConfiguration>;
+
+pub fn spawn_tls_configuration() -> Result<rustls::ServerConfig> {
+    #[cfg(windows)]
+        let file = File::open("C:\\ProgramData\\Tusk\\tusk.crt")?;
+    #[cfg(unix)]
+        let file = File::open("/etc/tusk/domains/server-dev.local/cert.pem")?;
+    let mut reader = BufReader::new(file);
+    let certs: Vec<_> = rustls_pemfile::certs(&mut reader)?
+        .into_iter()
+        .map(rustls::Certificate)
+        .collect();
+
+    info!("Found {} certificates.", certs.len());
+
+    #[cfg(windows)]
+        let file = File::open("C:\\ProgramData\\Tusk\\tusk.key")?;
+    #[cfg(unix)]
+        let file = File::open("/etc/tusk/domains/server-dev.local/key.pem")?;
+    let mut reader = BufReader::new(file);
+    let keys: Vec<_> = rustls_pemfile::pkcs8_private_keys(&mut reader)?
+        .into_iter()
+        .map(rustls::PrivateKey)
+        .collect();
+
+    info!("Found {} keys, using the first one available.", keys.len());
+
+    let key = keys.into_iter()
+        .next()
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No key in file 'tusk.key'."))?;
+
+    info!("Key file loaded");
+
+    let config = rustls::ServerConfig::builder()
+        .with_safe_defaults()
+        .with_no_client_auth()
+        .with_single_cert(certs, key)?;
+
+    Ok(config)
+}
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct DieselConfigurationSection {
@@ -43,6 +84,9 @@ impl TuskConfigurationFile {
     }
 
     pub fn into_tusk(self) -> Result<TuskConfiguration> {
+        let TuskConfigurationSection { log_level, www_domain, api_domain } = self.tusk;
+        log::set_max_level(log_level);
+
         let tera = Tera::new("/srv/http/**/*.tera")?;
         for template in tera.get_template_names() {
             info!("Loaded Tera template {template}");
@@ -62,19 +106,19 @@ impl TuskConfigurationFile {
             session_lifecycle
         };
 
-        let TuskConfigurationSection { log_level, www_domain, api_domain } = self.tusk;
-        log::set_max_level(log_level);
-
         let connection_manager = ConnectionManager::new(self.diesel.url);
         let database_pool = Pool::new(connection_manager)?;
         let database_pool = Arc::new(database_pool);
+
+        let tls_server_configuration = spawn_tls_configuration()?;
 
         let config = TuskConfiguration {
             tera,
             www_domain,
             api_domain,
             database_pool,
-            session_configuration
+            session_configuration,
+            tls_server_configuration
         };
 
         Ok(config)
@@ -94,7 +138,8 @@ pub struct TuskConfiguration {
     www_domain: String,
     api_domain: String,
     database_pool: Arc<Pool<ConnectionManager<PgConnection>>>,
-    session_configuration: SessionConfiguration
+    session_configuration: SessionConfiguration,
+    tls_server_configuration: rustls::ServerConfig
 }
 impl TuskConfiguration {
     pub fn to_data(&self) -> web::Data<TuskConfiguration> {
@@ -136,5 +181,9 @@ impl TuskConfiguration {
 
     pub fn session_lifecycle(&self) -> actix_session::config::PersistentSession {
         self.session_configuration.session_lifecycle.clone()
+    }
+
+    pub fn tls_config(&self) -> rustls::ServerConfig {
+        self.tls_server_configuration.clone()
     }
 }

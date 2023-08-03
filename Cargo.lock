@@ -2677,6 +2677,7 @@ dependencies = [
  "nix",
  "r2d2",
  "rustls",
+ "rustls-pemfile",
  "secrecy",
  "serde",
  "systemctl",
