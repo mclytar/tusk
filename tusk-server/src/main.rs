@@ -28,7 +28,10 @@ pub fn server_spawn() -> Result<actix_web::dev::Server> {
 
     info!("Configuration loaded");
 
+    #[cfg(windows)]
     let file = File::open("C:\\ProgramData\\Tusk\\tusk.crt")?;
+    #[cfg(unix)]
+    let file = File::open("/etc/tusk/domains/server-dev.local/cert.pem")?;
     let mut reader = BufReader::new(file);
     let certs: Vec<_> = rustls_pemfile::certs(&mut reader)?
         .into_iter()
@@ -37,7 +40,10 @@ pub fn server_spawn() -> Result<actix_web::dev::Server> {
 
     info!("Found {} certificates.", certs.len());
 
+    #[cfg(windows)]
     let file = File::open("C:\\ProgramData\\Tusk\\tusk.key")?;
+    #[cfg(unix)]
+    let file = File::open("/etc/tusk/domains/server-dev.local/key.pem")?;
     let mut reader = BufReader::new(file);
     let keys: Vec<_> = rustls_pemfile::pkcs8_private_keys(&mut reader)?
         .into_iter()

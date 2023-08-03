@@ -117,7 +117,7 @@ impl TuskConfiguration {
     pub fn tera_context(&self) -> tera::Context {
         let mut context = tera::Context::new();
 
-        context.insert("protocol", "http");
+        context.insert("protocol", "https");
         context.insert("www_domain", &self.www_domain);
         context.insert("api_domain", &self.api_domain);
 
