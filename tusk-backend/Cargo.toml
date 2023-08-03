@@ -12,6 +12,7 @@ bcrypt = { version = "0.14", features = ["zeroize"] }
 diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
 log = { version = "0.4", features = ["std", "serde"] }
 r2d2 = "0.8"
+rustls = "0.20.8"
 secrecy = { version = "0.8.0", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 tera = "1"

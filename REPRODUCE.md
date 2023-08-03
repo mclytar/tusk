@@ -66,3 +66,33 @@ Similarly, we need to create the `tusk` user:
 $ sudo -u postgres createuser -s tusk -P
 $ createdb -O tusk tusk
 ```
+
+## Certificate generation
+
+For now, the server is local, hence we cannot use Let's Encrypt or similar.
+However, we can impersonate a Certificate Authority:
+```shell
+$ openssl genrsa -des3 -out myCA.key 4096
+$ openssl req -x509 -new -nodes -key myCA.key -sha256 -days 365 -out myCA.pem
+```
+This creates the files `myCA.key`, i.e., the private key, and `myCA.pem`, i.e., the certificate file, for the
+Certificate Authority.
+Now, let's create and sign a certificate.
+Write a file `tusk.ext` with the following content.
+```ini
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+```
+Then, run the following commands:
+```shell
+$ openssl genrsa -out tusk.pem 4096
+$ openssl req -new -key tusk.pem -out tusk.csr
+$ openssl x509 -req -in tusk.csr -CA myCA.pem -CAkey myCA.key -CAcreateserial -out tusk.crt -days 365 -sha256 -extfile tusk.ext
+$ openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in tusk.pem -out tusk.key
+```
+Now the private key can be found in `tusk.key` and the certificate can be found in `tusk.crt`.

@@ -10,6 +10,7 @@ pub enum Error {
     DatabaseQueryError(diesel::result::Error),
     IOError(std::io::Error),
     R2D2Error(r2d2::Error),
+    RustlsError(rustls::Error),
     TeraParseError(tera::Error),
     #[cfg(unix)]
     UnixError(nix::errno::Errno),
@@ -24,6 +25,7 @@ impl Display for Error {
             Error::DatabaseQueryError(e) => Display::fmt(e, f),
             Error::IOError(e) => Display::fmt(e, f),
             Error::R2D2Error(e) => Display::fmt(e, f),
+            Error::RustlsError(e) => Display::fmt(e, f),
             Error::TeraParseError(e) => Display::fmt(e, f),
             #[cfg(unix)]
             Error::UnixError(e) => Display::fmt(e, f),
@@ -40,6 +42,7 @@ impl std::error::Error for Error {
             Error::DatabaseQueryError(e) => Some(e),
             Error::IOError(e) => Some(e),
             Error::R2D2Error(e) => Some(e),
+            Error::RustlsError(e) => Some(e),
             Error::TeraParseError(e) => Some(e),
             #[cfg(unix)]
             Error::UnixError(e) => Some(e),
@@ -76,6 +79,12 @@ impl From<std::io::Error> for Error {
 impl From<r2d2::Error> for Error {
     fn from(value: r2d2::Error) -> Self {
         Error::R2D2Error(value)
+    }
+}
+
+impl From<rustls::Error> for Error {
+    fn from(value: rustls::Error) -> Self {
+        Error::RustlsError(value)
     }
 }
 

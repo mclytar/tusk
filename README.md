@@ -87,9 +87,10 @@ Said that, this is a first roadmap for the server construction.
   - [x] `tusk user add <username>` -- Creates a new user (asking for a password).
   - [x] `tusk user list` -- Lists all users.
   - [x] `tusk user delete <username>` -- Delete the user `<username>`.
-- [ ] Properly implement `/v1/session`.
-- [ ] Write a script to create a dummy certificate; the dummy certificate will not be authenticated, but this is not
-  important at this stage. The certificate creation and usage will match the specification of the `acme-client` crate.
+- [x] Properly implement `/v1/session`.
+- [ ] ~~Write a script to create a dummy certificate; the dummy certificate will not be authenticated, but this is not
+  important at this stage. The certificate creation and usage will match the specification of the `acme-client` crate.~~
+  Write the necessary steps in the `REPRODUCE.md` file for creating a certificate.
 - [ ] Integrate HTTPS.
   - Ignore the insecure warning.
 - [ ] **Checkpoint #4:** everything works as intended!
