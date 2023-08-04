@@ -4,49 +4,61 @@ const SYSTEMD_UNIT_PATH: &'static str = "/etc/systemd/system/tusk.service";
 use tusk_backend::error::Result;
 
 pub fn service_install() -> Result<()> {
-    println!("Creating unit file...");
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Creating unit file...");
 
     std::fs::write(SYSTEMD_UNIT_PATH, SERVICE_FILE_CONTENTS)?;
 
-    println!("Enabling unit file...");
+    pb.set_message("Enabling unit file...");
 
     systemctl::enable("tusk.service")?;
 
-    println!("Done!");
+    pb.finish_with_message("Done!");
 
     Ok(())
 }
 
 pub fn service_uninstall() -> Result<()> {
-    println!("Disabling unit file...");
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Disabling unit file...");
 
     systemctl::disable("tusk.service")?;
 
-    println!("Removing unit file...");
+    pb.set_message("Removing unit file...");
 
     std::fs::remove_file(SYSTEMD_UNIT_PATH)?;
 
-    println!("Done!");
+    pb.finish_with_message("Done!");
 
     Ok(())
 }
 
 pub fn service_start() -> Result<()> {
-    println!("Starting service...");
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Starting service...");
 
     systemctl::start("tusk.service")?;
 
-    println!("Done!");
+    pb.finish_with_message("Done!");
 
     Ok(())
 }
 
 pub fn service_stop() -> Result<()> {
-    println!("Stopping service...");
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Starting service...");
 
     systemctl::stop("tusk.service")?;
 
-    println!("Done!");
+    pb.finish_with_message("Done!");
 
     Ok(())
 }
