@@ -1,5 +1,6 @@
 use std::ffi::OsString;
 use std::time::{Duration, Instant};
+use indicatif::{ProgressBar, ProgressStyle};
 use windows_service::{
     Error as ServiceError,
     service::{ServiceAccess, ServiceErrorControl, ServiceInfo, ServiceStartType, ServiceType},
@@ -10,8 +11,10 @@ use windows_service::service::ServiceState;
 use tusk_backend::error::Result;
 
 pub fn service_install() -> Result<()> {
-
-    println!("Gathering information...");
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Gathering information...");
 
     let manager_access = ServiceManagerAccess::CONNECT | ServiceManagerAccess::CREATE_SERVICE;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
@@ -33,23 +36,30 @@ pub fn service_install() -> Result<()> {
         account_password: None
     };
 
-    println!("Installing server...");
+    pb.println("  Information gathered.");
+    pb.set_message("Installing server...");
 
     let service = service_manager.create_service(&service_info, ServiceAccess::CHANGE_CONFIG)?;
     service.set_description("Tusk server service for development")?;
 
-    println!("Registering logger...");
+    pb.println("  Server installed.");
+    pb.set_message("Registering logger...");
 
     if let Err(e) = winlog::try_register("Tusk Server") {
-        println!("Cannot register logger: {e}");
+        pb.println(format!("  Cannot register logger: {e}"));
     }
 
-    println!("Done!");
+    pb.finish_with_message("Done!");
 
     Ok(())
 }
 
 pub fn service_uninstall() -> Result<()> {
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Uninstalling...");
+
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -67,16 +77,15 @@ pub fn service_uninstall() -> Result<()> {
     let start = Instant::now();
     let timeout = Duration::from_secs(10);
     while start.elapsed() < timeout {
-        print!(".");
         if let Err(windows_service::Error::Winapi(e)) = service_manager.open_service("tusk-server", ServiceAccess::QUERY_STATUS) {
             if e.raw_os_error() == Some(windows_sys::Win32::Foundation::ERROR_SERVICE_DOES_NOT_EXIST as i32) {
-                println!("\nService uninstalled successfully!");
+                pb.finish_with_message("Service uninstalled successfully.");
                 return Ok(());
             }
         }
         std::thread::sleep(Duration::from_millis(500));
     }
-    println!("\nCannot verify deletion status.");
+    pb.finish_with_message("Cannot verify deletion status.");
     println!("Service tusk-server has been marked for deletion.");
 
     println!("Deregister logger...");
@@ -91,6 +100,11 @@ pub fn service_uninstall() -> Result<()> {
 }
 
 pub fn service_start() -> Result<()> {
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Starting server...");
+
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -102,22 +116,26 @@ pub fn service_start() -> Result<()> {
     let start = Instant::now();
     let timeout = Duration::from_secs(10);
     while start.elapsed() < timeout {
-        print!(".");
         match service.query_status()?.current_state {
             ServiceState::Running => {
-                println!("\nService started successfully!");
+                pb.finish_with_message("Service started successfully!");
                 return Ok(());
             },
             _ => {}
         }
-        std::thread::sleep(Duration::from_millis(500));
+        std::thread::sleep(Duration::from_millis(200));
     }
-    println!("\nCannot verify success of the operation.");
+    pb.finish_with_message("Cannot verify success of the operation.");
 
     Ok(())
 }
 
 pub fn service_stop() -> Result<()> {
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Stopping server...");
+
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
@@ -129,17 +147,16 @@ pub fn service_stop() -> Result<()> {
     let start = Instant::now();
     let timeout = Duration::from_secs(10);
     while start.elapsed() < timeout {
-        print!(".");
         match service.query_status()?.current_state {
             ServiceState::Stopped => {
-                println!("\nService stopped successfully!");
+                pb.finish_with_message("Service stopped successfully!");
                 return Ok(());
             },
             _ => {}
         }
-        std::thread::sleep(Duration::from_millis(500));
+        std::thread::sleep(Duration::from_millis(200));
     }
-    println!("\nCannot verify success of the operation.");
+    pb.finish_with_message("Cannot verify success of the operation.");
 
     Ok(())
 }

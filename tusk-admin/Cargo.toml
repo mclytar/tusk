@@ -14,6 +14,7 @@ actix-web = "4"
 clap = { version = "4", features = ["derive"] }
 console = "0.15"
 dialoguer = "0.10"
+indicatif = "0.17"
 secrecy = "0.8"
 tusk-backend = { path = "../tusk-backend" }
 
