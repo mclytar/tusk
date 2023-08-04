@@ -93,7 +93,7 @@ Said that, this is a first roadmap for the server construction.
   Write the necessary steps in the `REPRODUCE.md` file for creating a certificate.
 - [x] Integrate HTTPS.
   - Ignore the insecure warning.
-- [ ] **Checkpoint #4:** everything works as intended!
+- [x] **Checkpoint #4:** everything works as intended!
   - At this point, `tusk-admin` contains the functionalities to manage `tusk` and to handle users, `tusk-database`
     contains the starting point for developing the server data structures and code, and `tusk-backend` and `tusk-server`
     will be still focused on backend and server functionalities as usual.

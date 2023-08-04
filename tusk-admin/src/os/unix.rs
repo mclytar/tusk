@@ -1,7 +1,7 @@
 const SERVICE_FILE_CONTENTS: &'static str = include_str!("tusk.service");
 const SYSTEMD_UNIT_PATH: &'static str = "/etc/systemd/system/tusk.service";
 
-use std::time::{Duration, Instant};
+use std::time::{Duration};
 use indicatif::{ProgressBar, ProgressStyle};
 use tusk_backend::error::Result;
 
