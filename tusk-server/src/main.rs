@@ -9,7 +9,7 @@ use actix_web::{App, guard, HttpServer, web};
 use actix_web::middleware::Logger;
 
 use tusk_backend::error::Result;
-use tusk_backend::config::TuskConfigurationFile;
+use tusk_backend::config::{TuskConfigurationFile, TuskData};
 
 fn main() {
     if let Err(e) = os::run() {
@@ -17,7 +17,7 @@ fn main() {
     }
 }
 
-pub fn server_spawn() -> Result<actix_web::dev::Server> {
+pub fn server_spawn() -> Result<(actix_web::dev::Server, TuskData)> {
     os::initialize_logger();
 
     let tusk = TuskConfigurationFile::import()?
@@ -29,8 +29,11 @@ pub fn server_spawn() -> Result<actix_web::dev::Server> {
     tusk.apply_migrations()?;
     let config = tusk.tls_config();
 
+    let data = tusk.to_data();
+    let app_data = data.clone();
+
     let server = HttpServer::new(move || App::new()
-        .app_data(tusk.to_data())
+        .app_data(app_data.clone())
         .wrap(SessionMiddleware::builder(redis_store.clone(), tusk.session_key())
             .session_lifecycle(tusk.session_lifecycle())
             .cookie_secure(false)
@@ -45,7 +48,7 @@ pub fn server_spawn() -> Result<actix_web::dev::Server> {
     )).bind_rustls(("0.0.0.0", 443), config)?
         .run();
 
-    Ok(server)
+    Ok((server, data))
 }
 
 #[actix_web::main]

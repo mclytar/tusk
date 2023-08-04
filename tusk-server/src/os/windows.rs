@@ -35,7 +35,7 @@ pub fn tusk_server_main(_arguments: Vec<OsString>) {
 }
 
 pub fn run_service() -> Result<()> {
-    let server = crate::server_spawn()?;
+    let (server, tusk) = crate::server_spawn()?;
     let handle = server.handle();
 
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
@@ -43,6 +43,28 @@ pub fn run_service() -> Result<()> {
             ServiceControl::Interrogate => ServiceControlHandlerResult::NoError,
             ServiceControl::Stop => {
                 actix_web::rt::System::new().block_on(handle.stop(true));
+                ServiceControlHandlerResult::NoError
+            },
+            ServiceControl::Pause => {
+                actix_web::rt::System::new().block_on(handle.pause());
+                ServiceControlHandlerResult::NoError
+            },
+            ServiceControl::Continue => {
+                let mut tera = match tusk.tera.write() {
+                    Ok(lock) => lock,
+                    Err(e) => {
+                        log::error!("{e}");
+                        return ServiceControlHandlerResult::Other(1);
+                    }
+                };
+                match tera.full_reload() {
+                    Ok(()) => {},
+                    Err(e) => {
+                        log::error!("{e}");
+                        return ServiceControlHandlerResult::Other(2);
+                    }
+                };
+                actix_web::rt::System::new().block_on(handle.resume());
                 ServiceControlHandlerResult::NoError
             },
             _ => ServiceControlHandlerResult::NotImplemented
@@ -54,7 +76,7 @@ pub fn run_service() -> Result<()> {
     status_handle.set_service_status(ServiceStatus {
         service_type: SERVICE_TYPE,
         current_state: ServiceState::Running,
-        controls_accepted: ServiceControlAccept::STOP,
+        controls_accepted: ServiceControlAccept::STOP | ServiceControlAccept::PAUSE_CONTINUE,
         exit_code: ServiceExitCode::Win32(0),
         checkpoint: 0,
         wait_hint: Duration::default(),

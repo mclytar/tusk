@@ -162,8 +162,22 @@ pub fn service_stop() -> Result<()> {
 }
 
 pub fn service_reload() -> Result<()> {
-    service_stop()?;
-    service_start()?;
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
+    pb.enable_steady_tick(Duration::from_millis(50));
+    pb.set_message("Querying server...");
+
+    let manager_access = ServiceManagerAccess::CONNECT;
+    let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
+
+    let service_access = ServiceAccess::QUERY_STATUS | ServiceAccess::PAUSE_CONTINUE;
+    let service = service_manager.open_service("tusk-server", service_access)?;
+
+    service.pause()?;
+    service.resume()?;
+
+    pb.finish_with_message("Done!");
+
     Ok(())
 }
 
