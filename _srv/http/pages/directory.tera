@@ -1,0 +1,152 @@
+{% extends "template/page.tera" %}
+{% block main %}
+    <div class="container-fluid bg-body-tertiary rounded-3 p-4">
+        <nav class="nav nav-pills">
+            <a class="nav-link" href="#">Dummy</a>
+            <a class="nav-link active" href="#">Public</a>
+        </nav>
+        <hr/>
+
+        <div class="row">
+            <div class="col-4 col-xxl-2 col-xl-3 border-end">
+                <nav id="directoryTree" class="nav nav-pills flex-column">
+                    <a class="nav-link text-light"><img src="/static/small/folder-open.png" width="16"/> Documents</a>
+                    <nav class="nav nav-pills flex-column ps-3">
+                        <a class="nav-link text-light"><img src="/static/small/folder-open.png" width="16"/> Progetti</a>
+                        <nav class="nav nav-pills flex-column ps-3">
+                            <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> Mammoth</a>
+                            <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> Showman</a>
+                            <a class="nav-link text-light bg-secondary"><img src="/static/small/folder-open.png" width="16"/> Tusk</a>
+                            <nav class="nav nav-pills flex-column ps-3">
+                                <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> assets</a>
+                                <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> src</a>
+                                <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> target</a>
+                            </nav>
+                        </nav>
+                        <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> Università</a>
+                    </nav>
+                    <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> Music</a>
+                    <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> Pictures</a>
+                    <a class="nav-link text-light"><img src="/static/small/folder.png" width="16"/> Videos</a>
+                </nav>
+            </div>
+            <div class="col-8 col-xxl-10 col-xl-9">
+                <div id="fileExplorer" class="row row-cols-auto w-100 h-100 g-0">
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let current_root = ".public";
+        let current_dir = ".public";
+
+        function directoryTree_click(sender) {
+            let dir_tree = $(`#directoryTree`);
+            dir_tree.children()
+                .removeClass("active");
+
+            $(sender)
+                .addClass("active");
+        }
+
+        function directoryTree_dblclick(sender) {
+            let file_name = $(sender).children("span").text();
+            current_dir = `${current_root}/${file_name}`;
+            fileExplorer_displaySpinner();
+            fileExplorer_updateDirectory();
+        }
+
+        function directoryTree_updateDirectory() {
+            $.ajax({
+                type: "GET",
+                url: `{{ protocol }}://{{ api_domain }}/v1/directory/${current_root}`,
+                success: function (data, status, xhr) {
+                    let dir_tree = $(`#directoryTree`);
+                    dir_tree.empty();
+
+                    for (let item of data) {
+                        if (item.is_directory === false) continue;
+
+                        let folder = `<a class="nav-link text-light" href="#" onclick="directoryTree_click(this)" ondblclick="directoryTree_dblclick(this)"><img src="/static/small/folder.png" width="16"/> <span>${item.filename}</span></a>`;
+
+                        dir_tree.append(folder);
+                    }
+                }
+            })
+        }
+
+        function fileExplorer_displaySpinner() {
+            let file_explorer = $(`#fileExplorer`);
+            file_explorer.empty();
+            file_explorer.append(`<div class="d-flex justify-content-center w-100 h-100"><div class="spinner-border m-auto" role="status" style="width: 3rem; height: 3rem;"></div></div>`);
+        }
+
+        function fileExplorer_click(sender) {
+            let file_explorer = $(`#fileExplorer`);
+            file_explorer.children()
+                .children()
+                .removeClass("bg-dark-subtle");
+
+            $(sender)
+                .addClass("bg-dark-subtle");
+        }
+
+        function fileExplorer_dblclick(sender) {
+            let file_name = $(sender).children("div").text();
+            current_dir += `/${file_name}`;
+            fileExplorer_displaySpinner();
+            fileExplorer_updateDirectory();
+        }
+
+        function fileExplorer_updateDirectory() {
+            $.ajax({
+                type: "GET",
+                url: `{{ protocol }}://{{ api_domain }}/v1/directory/${current_dir}`,
+                success: function (data, status, xhr) {
+                    let file_explorer = $(`#fileExplorer`);
+                    file_explorer.empty();
+
+                    for (let item of data) {
+                        if (item.is_directory === false) continue;
+
+                        let icon = `<img class="card-img-top m-auto mt-2" src="/static/large/folder.png" style="width: 32px" />`;
+                        let title = `<div class="card-body m-0">${item.filename}</div>`;
+                        let file = `<section class="card text-center border-0 bg-body-tertiary p-0" onclick="fileExplorer_click(this)" ondblclick="fileExplorer_dblclick(this)" style="width: 96px">${icon}${title}</section>`;
+                        let file_container = `<div class="col">${file}</div>`;
+
+                        file_explorer.append(file_container);
+                    }
+
+                    for (let item of data) {
+                        if (item.is_directory === true) continue;
+
+                        let icon_type = "";
+                        if (item.filename.includes('.')) {
+                            switch (item.filename.split('.').slice(-1)[0]) {
+                                case "txt":
+                                    icon_type = "file-text";
+                                    break;
+                                default:
+                                    icon_type = "file";
+                            }
+                        } else {
+                            icon_type = "file";
+                        }
+
+                        let icon = `<img class="card-img-top m-auto mt-2" src="/static/large/${icon_type}.png" style="width: 32px" />`;
+                        let title = `<div class="card-body m-0">${item.filename}</div>`;
+                        let file = `<section class="card text-center border-0 bg-body-tertiary p-0" onclick="fileExplorer_click(this)" ondblclick="fileExplorer_dblclick(this)" style="width: 96px">${icon}${title}</section>`;
+                        let file_container = `<div class="col">${file}</div>`;
+
+                        file_explorer.append(file_container);
+                    }
+
+                }
+            })
+        }
+
+        fileExplorer_updateDirectory();
+        directoryTree_updateDirectory()
+    </script>
+{% endblock %}

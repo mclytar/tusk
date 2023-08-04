@@ -1,5 +1,8 @@
+use std::fs::DirEntry;
+use std::path::PathBuf;
+use std::time::SystemTime;
 use actix_session::Session;
-use actix_web::{HttpResponse, Responder};
+use actix_web::{HttpRequest, HttpResponse, Responder};
 use actix_web::web::{self, ServiceConfig};
 use log::{error, info, warn};
 use secrecy::Secret;
@@ -88,7 +91,111 @@ impl SessionResource {
     }
 }
 
+#[derive(Serialize)]
+pub struct DirectoryData {
+    filename: String,
+    is_directory: bool,
+    size: u64,
+    created: u64,
+    last_access: u64,
+    last_modified: u64
+}
+impl DirectoryData {
+    pub fn from_dir_entry(entry: DirEntry) -> DirectoryData {
+        let filename = entry.file_name().to_string_lossy().into_owned();
+        let attr = entry.metadata()
+            .unwrap();
+
+        let is_directory = attr.is_dir();
+        let size = attr.len();
+        let created = attr.created().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+        let last_access = attr.accessed().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+        let last_modified = attr.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+
+        DirectoryData {
+            filename,
+            is_directory,
+            size,
+            created,
+            last_access,
+            last_modified
+        }
+    }
+}
+
+pub struct DirectoryResource;
+
+#[rest_resource("/directory/{filename:.*}")]
+impl DirectoryResource {
+    #[cfg(unix)]
+    const ROOT: &'static str = "/srv/cloud/";
+    #[cfg(windows)]
+    const ROOT: &'static str = "\\\\?\\C:\\srv\\cloud\\";
+
+    fn path_canonicalize(req: &HttpRequest) -> std::io::Result<Option<PathBuf>> {
+        let path: PathBuf = req.match_info().query("filename").parse()
+            .unwrap();
+        let mut file_path = PathBuf::from(Self::ROOT);
+        file_path.extend(path.iter());
+
+        let path = file_path.canonicalize()?;
+
+        info!("Queried path {} (exists: {}, safe: {})", path.display(), path.exists(), path.starts_with(Self::ROOT));
+
+        if path.exists() && path.starts_with(Self::ROOT) {
+            Ok(Some(path))
+        } else {
+            Ok(None)
+        }
+    }
+
+    async fn get(session: Session, req: HttpRequest) -> impl Responder {
+        let username = match session.get::<String>("username") {
+            Ok(Some(username)) => username,
+            Ok(None) => return HttpResponse::Unauthorized().finish(),
+            Err(e) => {
+                error!("{e}");
+                return HttpResponse::InternalServerError().finish()
+            }
+        };
+
+        let path = match Self::path_canonicalize(&req) {
+            Ok(Some(path)) => path,
+            _ => return HttpResponse::NotFound().finish()
+        };
+
+        if !path.starts_with(Self::ROOT.to_owned() + ".public") && !path.starts_with(Self::ROOT.to_owned() + &username) {
+            return HttpResponse::Forbidden().finish();
+        }
+
+        let attr = std::fs::metadata(&path)
+            .unwrap();
+
+        if attr.is_dir() {
+            let sub_directories: Vec<_> = match std::fs::read_dir(&path) {
+                Ok(sub_dirs) => sub_dirs.into_iter()
+                    .filter_map(std::io::Result::ok)
+                    .map(DirectoryData::from_dir_entry)
+                    .collect(),
+                Err(e) => return HttpResponse::InternalServerError().body(format!("{e}"))
+            };
+
+            HttpResponse::Ok()
+                .json(sub_directories)
+        } else if attr.is_file() {
+            match actix_files::NamedFile::open(path) {
+                Ok(file) => file.into_response(&req),
+                Err(e) => HttpResponse::InternalServerError().body(format!("{e}"))
+            }
+        } else {
+            // TODO: return directory hierarchy
+            HttpResponse::NotImplemented().finish()
+        }
+    }
+}
+
 pub fn configure(cfg: &mut ServiceConfig) {
-    cfg.service(SessionResource);
+    cfg.service(SessionResource)
+        .service(DirectoryResource);
     // TODO...
 }

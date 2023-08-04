@@ -71,7 +71,7 @@
                     <i class="bi-speedometer2 pe-none me-2"></i>
                     Dashboard
                 </a>
-                <a href="/" class="nav-link text-white">
+                <a href="/directory" class="nav-link text-white">
                     <i class="bi-cloud pe-none me-2"></i>
                     Cloud
                 </a>
@@ -98,7 +98,7 @@
             function aLogOut_click(sender) {
                 $.ajax({
                     type: "DELETE",
-                    url: "/v1/session",
+                    url: "{{ protocol }}://{{ api_domain }}/v1/session",
                     success: function (data, status, xhr) {
                         window.location.href = "/login";
                     }

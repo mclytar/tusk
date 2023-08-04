@@ -1,0 +1,8 @@
+{% macro file(icon, text, icon_set, icon_large) %}
+    <div class="col">
+        <section class="card text-center border-0 bg-body-tertiary p-0" style="width: 96px">
+            <img class="card-img-top m-auto mt-2" src="/static/{{ icon }}{{ icon_large }}@1x.png" style="width: 32px" />
+            <div class="card-body m-0">{{ text }}</div>
+        </section>
+    </div>
+{% endmacro file %}
