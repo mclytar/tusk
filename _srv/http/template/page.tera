@@ -2,26 +2,61 @@
 {% block head %}
     {{ super() }}
     <style>
+        html, body {
+            height: 100%;
+        }
+
         body {
             position: absolute;
-
-            display: flex;
-            flex-direction: column;
 
             width: 100%;
             height: 100%;
         }
 
-        .navbar {
-            box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .1);
+        body > nav {
+            position: fixed;
+
+            top: 0;
+            height: 75px;
         }
 
-        @media (min-width: 768px) {
-            .navbar {
-                top: 0;
-                position: sticky;
-                z-index: 999;
+        body > #sidebar {
+            position: fixed;
+
+            padding: 1rem;
+
+            width: 280px;
+
+            z-index: 1050;
+        }
+
+        body > main {
+            position: fixed;
+
+            padding: 75px 0 0 0;
+
+            width: 100%;
+            height: 100%;
+
+            box-sizing: border-box;
+
+            z-index: 0;
+        }
+
+        @media (min-width: 1200px) {
+            body > #sidebar {
+                padding: 90px 1rem 1rem;
+
+                z-index: 1000;
             }
+
+            body > main {
+                padding: 75px 0 0 280px;
+            }
+        }
+
+        .navbar {
+            box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .1);
         }
 
         .tusk-role {
@@ -37,7 +72,7 @@
     </style>
 {% endblock %}
 {% block body %}
-    <nav class="navbar navbar-expand-xl navbar-dark bg-primary p-3">
+    <nav class="navbar navbar-expand-xl navbar-dark fixed-top bg-primary p-3">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
                 <img src="/static/favicon.ico" alt="Logo" width="32" height="32" class="d-none d-sm-inline-block align-text-top">
@@ -48,62 +83,62 @@
             </button>
         </div>
     </nav>
-    <div class="d-flex flex-nowrap h-100">
-        <div id="sidebar" class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark offcanvas-xl offcanvas-start" style="width: 280px;">
-            <div class="d-flex d-xl-none flex-column ms-2 me-2 p-2">
-                <button type="button" class="btn-close ms-auto" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
-            </div>
-            <div class="d-flex flex-column ms-2 me-2 p-2">
-                <img src="/static/favicon.ico" alt="" width="128" height="128" class="d-inline-block ms-auto me-auto">
-                <a href="/" class="d-flex fs-5 mt-2 mb-2 text-light text-decoration-none ms-auto me-auto">McLytar</a>
-                <div class="d-flex justify-content-center">
-                    <span class="badge tusk-role tusk-role-Admin">Admin</span>
-                    <span class="badge tusk-role tusk-role-User">User</span>
-                </div>
-            </div>
-            <hr>
-            <nav class="nav nav-pills flex-column">
-                <a href="/" class="nav-link active">
-                    <i class="bi-house pe-none me-2"></i>
-                    Home
-                </a>
-                <a href="/" class="nav-link text-white">
-                    <i class="bi-speedometer2 pe-none me-2"></i>
-                    Dashboard
-                </a>
-                <a href="/directory" class="nav-link text-white">
-                    <i class="bi-cloud pe-none me-2"></i>
-                    Cloud
-                </a>
-                <a href="/" class="nav-link text-white">
-                    <i class="bi-card-checklist pe-none me-2"></i>
-                    Tasks
-                </a>
-                <a href="/" class="nav-link text-white">
-                    <i class="bi-cart pe-none me-2"></i>
-                    Shopping list
-                </a>
-            </nav>
-            <nav class="nav nav-pills flex-column mt-auto">
-                <a href="#" class="nav-link text-danger-emphasis" onclick="aLogOut_click(this)">
-                    <i class="bi-box-arrow-right pe-none me-2"></i>
-                    Log out
-                </a>
-            </nav>
+    <div id="sidebar" class="d-flex flex-column flex-shrink-0 flex-grow-1 h-100 text-bg-dark offcanvas-xl offcanvas-start">
+        <div class="d-flex d-xl-none flex-column ms-2 me-2 p-2">
+            <button type="button" class="btn-close ms-auto" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
         </div>
-        <main class="bg-body-secondary p-3 w-100 h-100">
-            {% block main %}{% endblock %}
-        </main>
-        <script>
-            function aLogOut_click(sender) {
-                $.ajax({
-                    type: "DELETE",
-                    url: "{{ protocol }}://{{ api_domain }}/v1/session",
-                    success: function (data, status, xhr) {
-                        window.location.href = "/login";
-                    }
-                })
-            }
-        </script>
+        <div class="d-flex flex-column ms-2 me-2 p-2">
+            <img src="/static/favicon.ico" alt="" width="128" height="128" class="d-inline-block ms-auto me-auto">
+            <a href="/" class="d-flex fs-5 mt-2 mb-2 text-light text-decoration-none ms-auto me-auto">McLytar</a>
+            <div class="d-flex justify-content-center">
+                <span class="badge tusk-role tusk-role-Admin">Admin</span>
+                <span class="badge tusk-role tusk-role-User">User</span>
+            </div>
+        </div>
+        <hr>
+        <nav class="nav nav-pills flex-column">
+            <a href="/" class="nav-link active">
+                <i class="bi-house pe-none me-2"></i>
+                Home
+            </a>
+            <a href="/" class="nav-link text-white">
+                <i class="bi-speedometer2 pe-none me-2"></i>
+                Dashboard
+            </a>
+            <a href="/directory" class="nav-link text-white">
+                <i class="bi-cloud pe-none me-2"></i>
+                Cloud
+            </a>
+            <a href="/" class="nav-link text-white">
+                <i class="bi-card-checklist pe-none me-2"></i>
+                Tasks
+            </a>
+            <a href="/" class="nav-link text-white">
+                <i class="bi-cart pe-none me-2"></i>
+                Shopping list
+            </a>
+        </nav>
+        <nav class="nav nav-pills flex-column mt-auto">
+            <a href="#" class="nav-link text-danger-emphasis" onclick="aLogOut_click(this)">
+                <i class="bi-box-arrow-right pe-none me-2"></i>
+                Log out
+            </a>
+        </nav>
     </div>
+    <main>
+        <div class="bg-body-secondary p-3 w-100 h-100 overflow-auto">
+            {% block main %}{% endblock %}
+        </div>
+    </main>
+    <script>
+        function aLogOut_click(sender) {
+            $.ajax({
+                type: "DELETE",
+                url: "{{ protocol }}://{{ api_domain }}/v1/session",
+                success: function (data, status, xhr) {
+                    window.location.href = "/login";
+                }
+            })
+        }
+    </script>
 {% endblock %}

@@ -92,10 +92,15 @@ impl SessionResource {
 }
 
 #[derive(Serialize)]
+pub enum FileType {
+    File { size: u64 },
+    Directory { children: u64 },
+    None
+}
+#[derive(Serialize)]
 pub struct DirectoryData {
     filename: String,
-    is_directory: bool,
-    size: u64,
+    file_type: FileType,
     created: u64,
     last_access: u64,
     last_modified: u64
@@ -106,16 +111,30 @@ impl DirectoryData {
         let attr = entry.metadata()
             .unwrap();
 
-        let is_directory = attr.is_dir();
-        let size = attr.len();
+        let file_type = if attr.is_dir() {
+            let children = match std::fs::read_dir(&entry.path()) {
+                Ok(sub_dirs) => sub_dirs.into_iter()
+                    .filter_map(std::io::Result::ok)
+                    .map(|dir| dir.metadata())
+                    .filter_map(std::io::Result::ok)
+                    .filter(|attr| attr.is_dir())
+                    .count() as u64,
+                Err(_) => 0
+            };
+            FileType::Directory { children }
+        } else if attr.is_file() {
+            let size = attr.len();
+            FileType::File { size }
+        } else {
+            FileType::None
+        };
         let created = attr.created().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
         let last_access = attr.accessed().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
         let last_modified = attr.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
 
         DirectoryData {
             filename,
-            is_directory,
-            size,
+            file_type,
             created,
             last_access,
             last_modified

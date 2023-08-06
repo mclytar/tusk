@@ -103,7 +103,7 @@ Said that, this is a first roadmap for the server construction.
 - [ ] Implement directory browsing functionalities.
   - [ ] For every user, create the respective cloud root directory in `/srv/cloud/`.
     - Example: the user `dummy` will have its cloud contents stored in `/srv/cloud/dummy/*/**`.
-  - [ ] There will be a special directory `/srv/cloud/.public/` accessible to every user.
+  - [x] There will be a special directory `/srv/cloud/.public/` accessible to every user.
 - [ ] _[OPTIONAL] Integrate Docker_.
 - [ ] Final tests -- check that all the unit and integration tests are successful and that everything works as intended.
 - [ ] `git tag -a 0.1`
