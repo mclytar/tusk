@@ -12,8 +12,18 @@ impl GUIResource {
         let mut path = path.into_inner();
         if path.is_empty() { path = String::from("index"); }
 
+        let mut context = tusk.tera_context();
+
+        let tera = match tusk.tera.read() {
+            Ok(t) => t,
+            Err(e) => {
+                log::error!("Poison error: {e}");
+                return HttpResponse::InternalServerError().finish();
+            }
+        };
+
         if &path != "login" {
-            let _ = match session.get::<String>("username") {
+            let username = match session.get::<String>("username") {
                 Ok(Some(username)) => username,
                 Ok(None) => return HttpResponse::Found()
                     .insert_header((LOCATION, "/login"))
@@ -23,17 +33,9 @@ impl GUIResource {
                     return HttpResponse::InternalServerError().finish()
                 }
             };
+
+            context.insert("username", &username);
         }
-
-        let context = tusk.tera_context();
-
-        let tera = match tusk.tera.read() {
-            Ok(t) => t,
-            Err(e) => {
-                log::error!("Poison error: {e}");
-                return HttpResponse::InternalServerError().finish();
-            }
-        };
 
         let body = match tera.render(&format!("pages/{path}.tera"), &context) {
             Ok(b) => b,

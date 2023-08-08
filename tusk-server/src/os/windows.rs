@@ -2,6 +2,7 @@ use std::{
     ffi::OsString,
 };
 use std::time::Duration;
+use notify::{RecursiveMode, Watcher};
 use windows_service::{
     define_windows_service,
     service::{
@@ -37,6 +38,28 @@ pub fn tusk_server_main(_arguments: Vec<OsString>) {
 pub fn run_service() -> Result<()> {
     let (server, tusk) = crate::server_spawn()?;
     let handle = server.handle();
+
+    let tusk_copy = tusk.clone();
+    let mut watcher = notify::recommended_watcher(move |res| {
+        match res {
+            Ok(_) => {
+                let mut tera = match tusk_copy.tera.write() {
+                    Ok(lock) => lock,
+                    Err(e) => { log::error!("{e}"); return; }
+                };
+                match tera.full_reload() {
+                    Ok(()) => {},
+                    Err(e) => { log::error!("{e}"); }
+                }
+            },
+            Err(e) => {
+                log::error!("{e}");
+            }
+        }
+    }).expect("event watcher");
+
+    watcher.watch(std::path::Path::new("/srv/http/"), RecursiveMode::Recursive)
+        .expect("watcher set up");
 
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
         match control_event {
