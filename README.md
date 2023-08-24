@@ -99,12 +99,11 @@ Said that, this is a first roadmap for the server construction.
     will be still focused on backend and server functionalities as usual.
   - The last functionality that is OS dependant is the one for cloud space. The last checkpoint will be dedicated to
     this.
-- [ ] Implement `/directory` using Bootstrap.
-- [ ] Implement directory browsing functionalities.
-  - [ ] For every user, create the respective cloud root directory in `/srv/cloud/`.
-    - Example: the user `dummy` will have its cloud contents stored in `/srv/cloud/dummy/*/**`.
-  - [x] There will be a special directory `/srv/cloud/.public/` accessible to every user.
-- [ ] _[OPTIONAL] Integrate Docker_.
+- [x] Implement `/directory` using Bootstrap.
+- [x] Implement directory browsing functionalities.
+  - [ ] For every user, create the respective cloud root directory in `/srv/directory/`.
+    - Example: the user `dummy` will have its cloud contents stored in `/srv/directory/dummy/*/**`.
+  - [x] There will be a special directory `/srv/directory/.public/` accessible to every user.
 - [ ] Final tests -- check that all the unit and integration tests are successful and that everything works as intended.
 - [ ] `git tag -a 0.1`
 - [ ] `git checkout -b develop`

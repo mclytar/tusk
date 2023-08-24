@@ -1,0 +1,329 @@
+{% extends "template/page.tera" %}
+{% block main %}
+    <style>
+        .split {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .gutter {
+            background-color: #eee;
+            background-repeat: no-repeat;
+            background-position: 50%;
+        }
+
+        .gutter.gutter-horizontal {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+            cursor: col-resize;
+        }
+
+        html[data-bs-theme="dark"] img.light {
+            display: none;
+        }
+
+        html[data-bs-theme="light"] img.dark {
+            display: none;
+        }
+
+        @media (prefers-color-scheme: light) {
+            html:not([data-bs-theme="dark"]):not([data-bs-theme="light"]) img.dark {
+                display: none;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            html:not([data-bs-theme="dark"]):not([data-bs-theme="light"]) img.light {
+                display: none;
+            }
+        }
+    </style>
+    <section class="sf-component-file-explorer file-explorer container-fluid bg-body-tertiary rounded-3 p-4">
+        <h1>File explorer</h1>
+        <header class="tab-content">
+            <nav class="nav nav-tabs">
+                <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#FileExplorer_Tabs_Home" href="#">Home</a>
+                <a class="nav-link" data-bs-toggle="tab" data-bs-target="#FileExplorer_Tabs_View" href="#">View</a>
+            </nav>
+            <!-- Home -->
+            <section id="FileExplorer_Tabs_Home" class="bg-body tab-pane active">
+                <button class="btn" name="button_refresh">
+                    <img class="dark" src="/static/ui/dark/large/refresh.png">
+                    <img class="light" src="/static/ui/light/large/refresh.png">
+                    <div href="#">Refresh</div>
+                </button>
+                <div class="vr"></div>
+                <button class="btn" name="button_new_folder">
+                    <img class="dark" src="/static/ui/dark/large/folder-new.png">
+                    <img class="light" src="/static/ui/light/large/folder-new.png">
+                    <div href="#">New folder</div>
+                </button>
+                <section class="btn-group-vertical" role="group">
+                    <button disabled name="button_upload_file" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/file-upload.png" /><img class="light" src="/static/ui/light/small/file-upload.png" /> Upload file</button>
+                    <button disabled name="button_upload_folder" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/folder-upload.png" /><img class="light" src="/static/ui/light/small/folder-upload.png" /> Upload folder</button>
+                    <section class="btn-group">
+                        <button disabled class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img class="dark" src="/static/ui/dark/small/document-new.png" /><img class="light" src="/static/ui/light/small/document-new.png" /> New
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <button name="button_upload_file" class="dropdown-item icon-link"><img src="/static/ui/file-types/small/txt.png" /> Text file</button>
+                            </li>
+                        </ul>
+                    </section>
+                </section>
+                <div class="vr"></div>
+                <button class="btn" name="button_delete" disabled>
+                    <img class="dark" src="/static/ui/dark/large/delete.png">
+                    <img class="light" src="/static/ui/light/large/delete.png">
+                    <div href="#">Delete</div>
+                </button>
+                <div class="vr"></div>
+                <section class="btn-group-vertical" role="group">
+                    <button name="button_select_all" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/select-all.png" /><img class="light" src="/static/ui/light/small/select-all.png" /> Select all</button>
+                    <button name="button_select_none" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/select-none.png" /><img class="light" src="/static/ui/light/small/select-none.png" /> Deselect all</button>
+                    <button name="button_select_inverse" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/select-inverse.png" /><img class="light" src="/static/ui/light/small/select-inverse.png" /> Invert selection</button>
+                </section>
+                <div class="vr"></div>
+            </section>
+            <!-- View -->
+            <section id="FileExplorer_Tabs_View" class="bg-body tab-pane">
+                <section class="btn-group-vertical" role="group">
+                    <input id="radio_view_large_icons" type="radio" class="btn-check" name="radio_view" value="large-icons">
+                    <label for="radio_view_large_icons" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/view-large-icons.png" /><img class="light" src="/static/ui/light/small/view-large-icons.png" /> Large icons</label>
+                    <input id="radio_view_medium_icons" type="radio" class="btn-check" name="radio_view" value="medium-icons" checked>
+                    <label for="radio_view_medium_icons" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/view-medium-icons.png" /><img class="light" src="/static/ui/light/small/view-medium-icons.png" /> Medium icons</label>
+                    <input id="radio_view_small_icons" type="radio" class="btn-check" name="radio_view" value="small-icons">
+                    <label for="radio_view_small_icons" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/view-small-icons.png" /><img class="light" src="/static/ui/light/small/view-small-icons.png" /> Small icons</label>
+                </section>
+                <section class="btn-group-vertical" role="group">
+                    <input id="radio_view_content" type="radio" class="btn-check" name="radio_view" value="content">
+                    <label for="radio_view_content" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/view-content.png" /><img class="light" src="/static/ui/light/small/view-content.png" /> Content</label>
+                    <input id="radio_view_list" type="radio" class="btn-check" name="radio_view" value="list">
+                    <label for="radio_view_list" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/view-list.png" /><img class="light" src="/static/ui/light/small/view-list.png" /> List</label>
+                    <input id="radio_view_details" type="radio" class="btn-check" name="radio_view" value="details">
+                    <label for="radio_view_details" class="btn icon-link"><img class="dark" src="/static/ui/dark/small/view-details.png" /><img class="light" src="/static/ui/light/small/view-details.png" /> Details</label>
+                </section>
+                <div class="vr"></div>
+            </section>
+        </header>
+        <nav>
+            <div>
+                <button name="button_undo" class="btn btn-sm" disabled><img class="dark" src="/static/ui/dark/small/undo.png" /><img class="light" src="/static/ui/light/small/undo.png" /></button>
+                <button name="button_redo" class="btn btn-sm" disabled><img class="dark" src="/static/ui/dark/small/redo.png" /><img class="light" src="/static/ui/light/small/redo.png" /></button>
+                <button name="button_parent" class="btn btn-sm" disabled><img class="dark" src="/static/ui/dark/small/folder-up.png" /><img class="light" src="/static/ui/light/small/folder-up.png" /></button>
+                <div class="vr"></div>
+                <div class="btn-group">
+                    <button name="button_breadcrumb_root" type="button" class="btn btn-sm icon-link"><img class="dark" src="/static/ui/dark/small/user.png" /><img class="light" src="/static/ui/light/small/user.png" /> {{ username }}</button>
+                    <button type="button" class="btn btn-sm icon-link dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
+                    <ul class="dropdown-menu">
+                        <li><button name="button_user_public" class="dropdown-item icon-link"><img class="dark" src="/static/ui/dark/small/world.png" /><img class="light" src="/static/ui/light/small/world.png" /> Public</button></li>
+                        <li><button name="button_user_self" class="dropdown-item icon-link"><img class="dark" src="/static/ui/dark/small/user.png" /><img class="light" src="/static/ui/light/small/user.png" /> {{  username }}</button></li>
+                    </ul>
+                </div>
+                <ol id="Breadcrumbs" class="sf-component-breadcrumb breadcrumb"></ol>
+            </div>
+        </nav>
+        <main>
+            <div class="split">
+                <div id="splitDirTree">
+                    <ul id="DirectoryTree" class="sf-component-directory-tree tree-view">
+                        <!-- Directory tree view goes here -->
+                    </ul>
+                </div>
+                <div id="splitFileExp">
+                    <ul id="FileViewer" class="sf-component-file-viewer medium-icons">
+                        <!-- File view goes here -->
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </section>
+    <script type="module" src="/static/file_explorer.js"></script>
+    <script type="module">
+        import { Collapse } from 'bootstrap';
+
+        let current_root = ".public";
+        let current_dir = ".public";
+
+        Split(['#splitDirTree', '#splitFileExp'], { sizes: [25, 75] });
+
+        function directoryTree_dblclick(sender) {
+            let file_name = $(sender).children("span").text();
+            current_dir = `${current_root}/${file_name}`;
+            fileExplorer_displaySpinner();
+            fileExplorer_updateDirectory();
+        }
+
+        function directoryTree_collapse(sender) {
+            console.log(sender.classList);
+
+            if (sender.classList.contains("bi-dash-square")) {
+                let element = sender.parentElement.nextElementSibling;
+                new Collapse(element);
+
+                sender.classList.remove("bi-dash-square");
+                sender.classList.add("bi-plus-square");
+            } else if (sender.classList.contains("bi-plus-square")) {
+                let element = sender.parentElement.nextElementSibling;
+                new Collapse(element);
+
+                sender.classList.remove("bi-plus-square");
+                sender.classList.add("bi-dash-square");
+            } else if (sender.classList.contains("bi-plus-square-dotted")) {
+                let element = sender.parentElement.nextElementSibling;
+                new Collapse(element);
+
+                sender.classList.remove("bi-plus-square-dotted");
+                sender.classList.add("bi-dash-square-dotted");
+            }
+
+            return false;
+        }
+        window.directoryTree_collapse = directoryTree_collapse;
+
+        function directoryTree_updateDirectory() {
+            $.ajax({
+                type: "GET",
+                url: `{{ protocol }}://{{ api_domain }}/v1/directory/${current_root}`,
+                success: function (data, status, xhr) {
+                    let dir_tree = $(`#directoryTree`);
+                    dir_tree.empty();
+
+                    for (let item of data) {
+                        if (!item.file_type.Directory) continue;
+
+                        let folder_name = `<span class="filename">${item.filename}</span>`;
+                        let icon = `<img class="m-1 mb-2" src="/static/small/folder.png" width="16" />`;
+                        let tree_item = "";
+                        if (item.file_type.Directory.children > 0) {
+                            tree_item = `<li class="tree-item pt-1" onclick="directoryTree_click(this)" ondblclick="directoryTree_dblclick(this)"><i class="bi-plus-square"></i>${icon} ${folder_name}</li>`;
+                        } else {
+                            tree_item = `<li class="tree-item pt-1" onclick="directoryTree_click(this)" ondblclick="directoryTree_dblclick(this)"><i class=""></i>${icon} ${folder_name}</li>`;
+                        }
+
+                        dir_tree.append(tree_item);
+                    }
+                }
+            })
+        }
+
+        function fileExplorer_displaySpinner() {
+            let file_explorer = $(`#fileExplorer`);
+            file_explorer.empty();
+            file_explorer.append(`<div class="d-flex justify-content-center w-100 h-100"><div class="spinner-border m-auto" role="status" style="width: 3rem; height: 3rem;"></div></div>`);
+        }
+
+        function fileExplorer_click(sender) {
+            let file_explorer = $(`#fileExplorer`);
+            file_explorer.children()
+                .children()
+                .removeClass("bg-dark-subtle");
+
+            $(sender)
+                .addClass("bg-dark-subtle");
+        }
+
+        function fileExplorer_dblclick(sender) {
+            let file_name = $(sender).children("div").text();
+            current_dir += `/${file_name}`;
+            fileExplorer_displaySpinner();
+            fileExplorer_updateDirectory();
+        }
+
+        function fileExplorer_updateDirectory() {
+            $.ajax({
+                type: "GET",
+                url: `{{ protocol }}://{{ api_domain }}/v1/directory/${current_dir}`,
+                success: function (data, status, xhr) {
+                    let file_explorer = $(`#fileExplorer`);
+                    file_explorer.empty();
+
+                    for (let item of data) {
+                        console.log(item.file_type);
+
+                        if (!item.file_type.Directory) continue;
+
+                        let icon = `<img class="card-img-top m-auto mt-2" src="/static/large/folder.png" style="width: 32px" />`;
+                        let title = `<div class="card-body m-0">${item.filename}</div>`;
+                        let file = `<section class="card text-center border-0 bg-body-tertiary p-0" onclick="fileExplorer_click(this)" ondblclick="fileExplorer_dblclick(this)" style="width: 96px">${icon}${title}</section>`;
+                        let file_container = `<div class="col">${file}</div>`;
+
+                        file_explorer.append(file_container);
+                    }
+
+                    for (let item of data) {
+                        if (!item.file_type.File) continue;
+
+                        let icon_type = "";
+                        if (item.filename.includes('.')) {
+                            switch (item.filename.split('.').slice(-1)[0]) {
+                                case "txt":
+                                    icon_type = "file-text";
+                                    break;
+                                case "pdf":
+                                    icon_type = "file-pdf";
+                                    break;
+                                case "png":
+                                case "jpg":
+                                    icon_type = "picture";
+                                    break;
+                                default:
+                                    icon_type = "file";
+                            }
+                        } else {
+                            icon_type = "file";
+                        }
+
+                        let icon = `<img class="card-img-top m-auto mt-2" src="/static/large/${icon_type}.png" style="width: 32px" />`;
+                        let title = `<div class="card-body m-0">${item.filename}</div>`;
+                        let file = `<section class="card text-center border-0 bg-body-tertiary p-0" onclick="fileExplorer_click(this)" ondblclick="fileExplorer_dblclick(this)" style="width: 96px">${icon}${title}</section>`;
+                        let file_container = `<div class="col">${file}</div>`;
+
+                        file_explorer.append(file_container);
+                    }
+
+                }
+            })
+        }
+
+        //fileExplorer_updateDirectory()
+    </script>
+{% endblock %}
+{% block end %}
+    <div id="Window_NotImplemented" class="modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Not implemented</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>The file viewer functionality is not yet implemented.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="dialog_new_folder" class="modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <header class="modal-header">
+                    <h5 class="modal-title">New folder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </header>
+                <main class="modal-body">
+                    <div class="mb-3">
+                        <label for="dialog_new_folder_name" class="form-label">Name of the folder:</label>
+                        <input type="text" name="folder_name" id="dialog_new_folder_name" class="form-control" placeholder="New Folder">
+                    </div>
+                </main>
+                <footer class="modal-footer">
+                    <button name="cancel" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button name="create" type="button" class="btn btn-primary" data-bs-dismiss="modal">Create</button>
+                </footer>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,6 +1,9 @@
+#![warn(missing_docs)]
+
 pub mod error;
-mod os;
-mod user;
+pub mod os;
+
+pub mod user;
 
 use clap::{Parser, Subcommand};
 

@@ -1,118 +1,70 @@
-use std::fs::DirEntry;
-use std::path::PathBuf;
-use std::time::SystemTime;
+//! Resources in the REST API.
+//!
+//! Contains the structures relative to the REST resources handled by the API.
+//! Every structure is relative to a single resource and contains the HTTP methods to handle it.
+//! Helper serializable/deserializable structures are contained in the respective modules, and they
+//! address the relative CRUD methods.
+
+pub mod session;
+pub mod directory;
+
+use actix_files::NamedFile;
+use actix_multipart::form::MultipartForm;
 use actix_session::Session;
 use actix_web::{HttpRequest, HttpResponse, Responder};
 use actix_web::http::header;
 use actix_web::web::{self, ServiceConfig};
-use log::{error, info, warn};
-use secrecy::Secret;
-use serde::{Serialize, Deserialize, Serializer};
-use serde::ser::SerializeMap;
 use tusk_backend::config::TuskData;
-use tusk_backend::error::Error;
-use tusk_backend::resources;
+use tusk_backend::error::Error as TuskError;
+use tusk_backend::resources::User;
 use tusk_derive::rest_resource;
+use crate::error::{HttpError, HttpIfError, HttpOkOr, HttpResult, WrapResult};
+use crate::api::directory::{DirectoryPath, DirectoryItemRead, DirectoryItemCreate, FileCreate, FolderCreate};
+use crate::api::session::{SessionCreate, SessionRead};
 
-macro_rules! maybe_error {
-    ($expr:expr) => {{
-        match $expr {
-            Ok(val) => val,
-            Err(_) => {
-                return HttpResponse::InternalServerError().finish()
-            }
-        }
-    }};
-    ($expr:expr, log) => {{
-        match $expr {
-            Ok(val) => val,
-            Err(e) => {
-                error!("{e}");
-                return HttpResponse::InternalServerError().finish()
-            }
-        }
-    }};
-    ($expr:expr, $($err_type:pat => $block:block),*) => {{
-        match $expr {
-            Ok(val) => val,
-            $($err_type => $block),*
-            Err(_) => {
-                return HttpResponse::InternalServerError().finish()
-            }
-        }
-    }};
-    ($expr:expr, log, $($err_type:pat => $block:block),*) => {{
-        match $expr {
-            Ok(val) => val,
-            $($err_type => $block),*
-            Err(e) => {
-                error!("{e}");
-                return HttpResponse::InternalServerError().finish()
-            }
-        }
-    }};
-}
-
-macro_rules! extract_username {
-    ($session:expr) => {{
-        match $session.get::<String>("username") {
-            Ok(Some(username)) => username,
-            Ok(None) => return HttpResponse::Unauthorized().finish(),
-            Err(e) => {
-                error!("{e}");
-                return HttpResponse::InternalServerError().finish()
-            }
-        }
-    }}
-}
-
-#[derive(Deserialize)]
-struct SessionFormData {
-    username: String,
-    password: String
-}
-
-#[derive(Serialize)]
-struct SessionJsonData {
-    username: String
-}
-
+/// Represents the `/session` REST resource.
+///
+/// The `/session` resource is responsible for authenticating users and keeping user sessions.
 pub struct SessionResource;
-
 #[rest_resource("/session")]
 impl SessionResource {
-    async fn get(session: Session) -> impl Responder {
-        let username = extract_username!(session);
+    async fn get(session: Session) -> HttpResult {
+        let session: SessionRead = session.try_into()
+            .or_unauthorized()?;
 
-        HttpResponse::Ok().json(SessionJsonData { username })
+        HttpResponse::Ok()
+            .json(session)
+            .wrap_ok()
     }
 
-    async fn post(tusk: TuskData, session: Session, form: web::Form<SessionFormData>) -> impl Responder {
-        let form = form.into_inner();
+    async fn post(tusk: TuskData, session: Session, web::Form(session_create): web::Form<SessionCreate>) -> HttpResult {
+        let mut db_connection = tusk.database_connect()
+            .or_internal_server_error()?;
 
-        let mut db_connection = maybe_error![tusk.database_connect(), log];
+        let user = User::read_by_username(&mut db_connection, session_create.username())
+            .map_err(|e| match e {
+                TuskError::DatabaseQueryError(tusk_backend::error::DieselQueryError::NotFound) => {
+                    // TODO: fake attempt login
+                    log::warn!("Failed login attempt for user `{}`", session_create.username());
+                    HttpError::unauthorized()
+                },
+                e => HttpError::internal_server_error().error(e)
+            })?;
 
-        let username = form.username;
-        let password = form.password;
-
-        let user = maybe_error!{resources::User::read_by_username(&mut db_connection, &username), log,
-            Err(Error::DatabaseQueryError(tusk_backend::error::DieselQueryError::NotFound)) => {
-                // TODO: implement fake password verification.
-                warn!("Failed login attempt for user `{username}`");
-                return HttpResponse::Unauthorized().finish();
-            }};
-
-        if !user.verify_password(&Secret::new(password)) {
-            warn!("Failed login attempt for user `{username}`");
-            return HttpResponse::Unauthorized().finish();
+        if !user.verify_password(session_create.password()) {
+            log::warn!("Failed login attempt for user `{}`", session_create.username());
+            return Err(HttpError::unauthorized());
         }
 
         session.renew();
-        maybe_error![session.insert("username", username.clone())];
+        session.insert("username", session_create.username())
+            .or_internal_server_error()
+            .with_log_error()?;
+        log::info!("User {} logged in", session_create.username());
 
-        info!("User {username} logged in");
-
-        HttpResponse::Created().finish()
+        HttpResponse::Created()
+            .finish()
+            .wrap_ok()
     }
 
     async fn delete(session: Session) -> impl Responder {
@@ -123,183 +75,108 @@ impl SessionResource {
     }
 }
 
-#[derive(Deserialize)]
-pub struct DirectoryCreate {
-    filename: String
-}
-
-pub enum FileType {
-    File { size: u64 },
-    Directory { children: u64 },
-    None
-}
-
-pub struct DirectoryData {
-    filename: String,
-    kind: FileType,
-    created: u64,
-    last_access: u64,
-    last_modified: u64
-}
-impl serde::Serialize for DirectoryData {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        let (add_len, kind, size, children) = match self.kind {
-            FileType::File { size } => (1, "file", Some(size), None),
-            FileType::Directory { children } => (1, "directory", None, Some(children)),
-            FileType::None => (0, "none", None, None)
-        };
-
-        let mut map = serializer.serialize_map(Some(5 + add_len))?;
-        map.serialize_entry("filename", &self.filename)?;
-        map.serialize_entry("kind", kind)?;
-        if let Some(size) = size { map.serialize_entry("size", &size)?; }
-        if let Some(children) = children { map.serialize_entry("children", &children)?; }
-        map.serialize_entry("created", &self.created)?;
-        map.serialize_entry("last_access", &self.last_access)?;
-        map.serialize_entry("last_modified", &self.last_modified)?;
-        map.end()
-    }
-}
-impl DirectoryData {
-    pub fn from_dir_metadata(filename: String, attr: std::fs::Metadata) -> DirectoryData {
-        let kind = FileType::Directory { children: 0 };
-        let created = attr.created().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-        let last_access = attr.accessed().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-        let last_modified = attr.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-
-        DirectoryData {
-            filename,
-            kind,
-            created,
-            last_access,
-            last_modified
-        }
-    }
-
-    pub fn from_dir_entry(entry: DirEntry) -> DirectoryData {
-        let filename = entry.file_name().to_string_lossy().into_owned();
-        let attr = entry.metadata()
-            .unwrap();
-
-        let kind = if attr.is_dir() {
-            let children = match std::fs::read_dir(&entry.path()) {
-                Ok(sub_dirs) => sub_dirs.into_iter()
-                    .filter_map(std::io::Result::ok)
-                    .map(|dir| dir.metadata())
-                    .filter_map(std::io::Result::ok)
-                    .filter(|attr| attr.is_dir())
-                    .count() as u64,
-                Err(_) => 0
-            };
-            FileType::Directory { children }
-        } else if attr.is_file() {
-            let size = attr.len();
-            FileType::File { size }
-        } else {
-            FileType::None
-        };
-        let created = attr.created().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-        let last_access = attr.accessed().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-        let last_modified = attr.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-
-        DirectoryData {
-            filename,
-            kind,
-            created,
-            last_access,
-            last_modified
-        }
-    }
-}
-
+/// Represents the `/directory` REST resource.
+///
+/// The `/directory` resource is responsible for creating, downloading, uploading or deleting
+/// files or folders in the user's directory.
 pub struct DirectoryResource;
-
 #[rest_resource("/directory/{filename:.*}")]
 impl DirectoryResource {
-    #[cfg(unix)]
-    const ROOT: &'static str = "/srv/cloud/";
-    #[cfg(windows)]
-    const ROOT: &'static str = "\\\\?\\C:\\srv\\cloud\\";
+    async fn get(session: Session, req: HttpRequest) -> HttpResult {
+        let session: SessionRead = session.try_into()?;
+        let path: DirectoryPath = req.match_info()
+            .query("filename")
+            .try_into()?;
+        path.authorize_for(session.username())?;
 
-    fn path_canonicalize(req: &HttpRequest, username: &str) -> Result<PathBuf, HttpResponse> {
-        let path: PathBuf = req.match_info().query("filename").parse()
-            .unwrap();
-        let mut file_path = PathBuf::from(Self::ROOT);
-        file_path.extend(path.iter());
-
-        let path = file_path.canonicalize()
-            .map_err(|e| { error!("{e}"); HttpResponse::NotFound().finish() })?;
-
-        info!("Queried path {} (exists: {}, safe: {})", path.display(), path.exists(), path.starts_with(Self::ROOT));
-
-        if !path.exists() && !path.starts_with(Self::ROOT) {
-            return Err(HttpResponse::NotFound().finish());
-        }
-
-        if !path.starts_with(Self::ROOT.to_owned() + ".public") && !path.starts_with(Self::ROOT.to_owned() + username) {
-            return Err(HttpResponse::Forbidden().finish());
-        }
-
-        Ok(path)
-    }
-
-    async fn get(session: Session, req: HttpRequest) -> impl Responder {
-        let username = extract_username!(session);
-
-        let path = match Self::path_canonicalize(&req, &username) {
-            Ok(path) => path,
-            Err(e) => return e
-        };
-
-        let attr = std::fs::metadata(&path)
-            .unwrap();
-
-        if attr.is_dir() {
-            let sub_directories: Vec<_> = match std::fs::read_dir(&path) {
-                Ok(sub_dirs) => sub_dirs.into_iter()
-                    .filter_map(std::io::Result::ok)
-                    .map(DirectoryData::from_dir_entry)
-                    .collect(),
-                Err(e) => return HttpResponse::InternalServerError().body(format!("{e}"))
-            };
+        if path.is_directory() {
+            let children = path.list_children()?;
 
             HttpResponse::Ok()
-                .json(sub_directories)
-        } else if attr.is_file() {
-            match actix_files::NamedFile::open(path) {
-                Ok(file) => file.into_response(&req),
-                Err(e) => HttpResponse::InternalServerError().body(format!("{e}"))
-            }
+                .json(children)
+                .wrap_ok()
         } else {
-            // TODO: return directory hierarchy
-            HttpResponse::NotImplemented().finish()
+            NamedFile::open(path)
+                .or_internal_server_error()?
+                .into_response(&req)
+                .wrap_ok()
         }
     }
 
-    async fn post(session: Session, directory: web::Form<DirectoryCreate>, req: HttpRequest) -> impl Responder {
-        let username = extract_username!(session);
-        let directory = directory.into_inner();
+    async fn delete(session: Session, req: HttpRequest) -> HttpResult {
+        let session: SessionRead = session.try_into()?;
+        let path: DirectoryPath = req.match_info()
+            .query("filename")
+            .try_into()?;
+        path.authorize_for(session.username())?;
 
-        let mut path = match Self::path_canonicalize(&req, &username) {
-            Ok(path) => path,
-            Err(e) => return e
-        };
+        path.delete()?;
 
-        if directory.filename.contains(|c| c == '\\' || c == '/') { return HttpResponse::BadRequest().finish(); }
-        path.push(&directory.filename);
+        HttpResponse::Ok()
+            .finish()
+            .wrap_ok()
+    }
 
-        maybe_error![std::fs::create_dir(&path), log];
-        let attr = maybe_error![std::fs::metadata(&path)];
+    async fn post(session: Session, data: MultipartForm<DirectoryItemCreate>, req: HttpRequest) -> HttpResult {
+        let session: SessionRead = session.try_into()?;
+        let mut path: DirectoryPath = req.match_info()
+            .query("filename")
+            .try_into()?;
+        path.authorize_for(session.username())?;
 
-        // TODO: add location header with the new resource location.
-        return HttpResponse::Created()
-            //.insert_header((header::LOCATION, ))
-            .json(DirectoryData::from_dir_metadata(directory.filename, attr))
+        let data = data.into_inner();
+
+        if data.is_folder() {
+            let folder_data: FolderCreate = data.try_into()?;
+
+            if folder_data.name().contains(|c| c == '\\' || c == '/') { return Err(HttpError::bad_request()); }
+            path.push(&folder_data.name());
+
+            path.create()?;
+
+            let attr: DirectoryItemRead = path.try_into()?;
+            HttpResponse::Created()
+                .insert_header((header::LOCATION, ""))
+                .json(attr)
+                .wrap_ok()
+        } else if data.is_file() {
+            let file_data: FileCreate = data.try_into()?;
+
+            {
+                let filename = match &file_data.payload().file_name {
+                    Some(name) if !name.contains(|c| c == '\\' || c == '/') => { name },
+                    _ => return Err(HttpError::bad_request())
+                };
+                path.push(filename);
+            }
+
+            file_data.into_payload().file.persist(&path)
+                .or_internal_server_error()
+                .with_log_error()?;
+
+
+            let attr: DirectoryItemRead = path.try_into()?;
+            HttpResponse::Created()
+                .insert_header((header::LOCATION, ""))
+                .json(attr)
+                .wrap_ok()
+        } else {
+            HttpResponse::BadRequest()
+                .finish()
+                .wrap_ok()
+        }
     }
 }
 
+/// Configures the server by adding the corresponding API resources.
 pub fn configure(cfg: &mut ServiceConfig) {
     cfg.service(SessionResource)
         .service(DirectoryResource);
     // TODO...
+}
+
+#[cfg(test)]
+mod test {
+    // TODO: Add tests for SessionResource.
+    // TODO: Add tests for DirectoryResource.
 }

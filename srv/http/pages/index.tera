@@ -1,0 +1,47 @@
+{% extends "template/page.tera" %}
+{% block main %}
+<article class="container-fluid bg-body-tertiary p-4">
+    <h1>Version 0.1.0 is alive!</h1>
+    <p>This is the version 0.1.0 of the server app, with project codename <code>tusk</code> (not final).</p>
+    <p>It may seem not a lot of work, but these were the actual steps that allowed this server app to be possible.</p>
+    <h4>Checkpoint #1</h4>
+    <ul>
+        <li>Build a fully functioning server in Rust, serving a trivial HTTP request.</li>
+        <li>Implement basic functionalities of continuous-integration and continuous-development;
+            in other words, it is a functionality that allows to keep working on the software while the software is up and running
+            and integrates the new modifications automatically.</li>
+        <li>Try not to over-analyze and write now functionalities that are only needed at a later point.</li>
+    </ul>
+    <p>At this point, we have a starting base from which develop everything else.</p>
+    <h4>Checkpoint #2</h4>
+    <ul>
+        <li>Add all the necessary boilerplate to ease the construction of REST API (i.e., a way to make the server and the client communicate in a semantic way).</li>
+        <li>Add support for Tera, the template library which allows to construct web pages without the need to always add the same code everywhere.</li>
+        <li>Add the <code>/login</code> web page and the <code>/v1/session</code> API endpoint to handle log-in and log-out functionalities.</li>
+        <li>Redirect the user to <code>/login</code> if it is not authenticated.</li>
+        <li>Use trivial authentication, hard-coding credentials <code>dummy</code> with password <code>dummy</code>: proper authentication can be implemented later.</li>
+    </ul>
+    <p>At this point, we have basic web-app functionalities.
+        The web-app is empty except for the log-in functionality, and log-in credentials are trivial but functioning.
+        Furthermore, to ease development at this stage, the <a class="icon-link" href="https://getbootstrap.com/" target="_blank">Bootstrap <i class="bi-box-arrow-up-right small"></i></a> framework is used.</p>
+    <h4>Checkpoint #3</h4>
+    <ul>
+        <li>Implement service/daemon functionalities working on both Windows and Linux operating systems.
+            This allows to run the server automatically and in background without human intervention.</li>
+        <li>Write the tusk admin software implementing basic install/uninstall and start/stop commands.</li>
+        <li>Update the way in which log-in session is stored in the server (use Redis instead of the basic functionality given by the Actix framework).</li>
+        <li>Install Postgres and add database functionalities to be able to store information on the server.</li>
+        <li>Add in the tusk admin software the proper commands to add, list and delete users.</li>
+        <li>Modify the log-in functionality so that a proper, secure log-in system is used.</li>
+        <li>Integrate HTTPS (otherwise, "secure log-in" doesn't make any sense).</li>
+    </ul>
+    <p>Now the server is "usable", even though there are no functionalities to be used.
+        There is HTTPS, secure log-in and basic front-end functionalities.</p>
+    <h4>Checkpoint #4</h4>
+    <p>This checkpoint was a bit more open-ended.
+        The goal was to implement Cloud functionalities, so that the web-app is also useful, other than usable.
+        After the last security checks, code reviews and a bit of documentation, this software is ready to be put on a proper online machine.</p>
+    <p><b>Disclaimer:</b> this software implements basic security functionalities, the OWASP guidelines and a bit of common sense; however, this does not mean that the software is perfectly safe.
+        Please do not store sensitive information.</p>
+</article>
+{% endblock %}

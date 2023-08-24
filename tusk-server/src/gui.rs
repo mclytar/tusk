@@ -1,10 +1,18 @@
+//! Web interface.
+//!
+//! This module contains the necessary functionalities to handle the web requests for the HTML
+//! interface (_i.e._, static files, web pages, etc.).
+
 use actix_session::Session;
 use actix_web::{HttpResponse, Responder};
 use actix_web::http::header::LOCATION;
 use actix_web::web::{self, ServiceConfig};
 use tusk_backend::config::TuskConfiguration;
-use tusk_derive::rest_resource;
 
+/// Defines the global resource for a web page.
+///
+/// Handles all the GUI requests that are not in `/static`, _i.e._, web pages. Every web page is a
+/// Tera template which is parsed and then sent to the client as a response.
 pub struct GUIResource;
 impl GUIResource {
     async fn get(session: Session, data: web::Data<TuskConfiguration>, path: web::Path<String>) -> impl Responder {
@@ -13,6 +21,7 @@ impl GUIResource {
         if path.is_empty() { path = String::from("index"); }
 
         let mut context = tusk.tera_context();
+        context.insert("page", path.as_str());
 
         let tera = match tusk.tera.read() {
             Ok(t) => t,
@@ -55,24 +64,14 @@ impl GUIResource {
     }
 }
 
-pub struct IndexResource;
-
-#[rest_resource("/")]
-impl IndexResource {
-    async fn get() -> impl Responder {
-        HttpResponse::Ok().body("This is the index!")
-    }
-
-    async fn post(req_body: String) -> impl Responder {
-        HttpResponse::Ok().body(req_body)
-    }
-
-    async fn delete() -> impl Responder {
-        HttpResponse::Ok().body("Resource deleted!")
-    }
+/// Configures the server by adding the `/static` service for serving static files and the `/*`
+/// service for serving web pages.
+pub fn configure(cfg: &mut ServiceConfig) {
+    cfg.service(actix_files::Files::new("/static", "/test/http/static"));
+    cfg.route("/{path:.*}", web::get().to(GUIResource::get));
 }
 
-pub fn configure(cfg: &mut ServiceConfig) {
-    cfg.service(actix_files::Files::new("/static", "/srv/http/static"));
-    cfg.route("/{path:.*}", web::get().to(GUIResource::get));
+#[cfg(test)]
+mod test {
+    // TODO: Add tests for GUIResource.
 }

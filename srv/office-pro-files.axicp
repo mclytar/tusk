@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AxialisIconCollection>
+  <Name>office-pro-files</Name>
+  <Icon>
+    <Name>file</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>document.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Basic</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>105</ResourceIDValue>
+    <ResourceID>ID_FILE</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>3</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>txt</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>document-text.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Basic</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>106</ResourceIDValue>
+    <ResourceID>ID_FILES/TEXT</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>3</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>exe</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>application.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Basic</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>107</ResourceIDValue>
+    <ResourceID>ID_FILES/EXECUTABLE</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>3</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>png</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>picture.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Basic</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>108</ResourceIDValue>
+    <ResourceID>ID_FILES/PICTURE</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>3</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>pdf</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>document-type-pdf.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Documents and Folders</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>114</ResourceIDValue>
+    <ResourceID>ID_FILE/PDF</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>2</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>conf</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>document-type-system.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Documents and Folders</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>115</ResourceIDValue>
+    <ResourceID>ID_FILE/CONFIG</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>2</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>sql</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>document-type-database-filled.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Documents and Folders</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>116</ResourceIDValue>
+    <ResourceID>ID_FILE/SQL</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>2</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>audio</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>document-type-music-filled.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Documents and Folders</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>117</ResourceIDValue>
+    <ResourceID>ID_FILE/AUDIO</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>2</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>video</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>document-type-movie-filled.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Documents and Folders</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>118</ResourceIDValue>
+    <ResourceID>ID_FILE/VIDEO</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>2</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+  <Icon>
+    <Name>zip</Name>
+    <HasBackground>0</HasBackground>
+    <StockIconName>folder-zip-filled.axvi</StockIconName>
+    <StockIconFamily>Axialis Office Pro</StockIconFamily>
+    <StockIconSet>Documents and Folders</StockIconSet>
+    <StockOverlayName></StockOverlayName>
+    <ResourceIDValue>130</ResourceIDValue>
+    <ResourceID>ID_FILE/ZIP</ResourceID>
+    <OverlayOffset>1</OverlayOffset>
+    <Opacity>255</Opacity>
+    <ColorizeMode>1</ColorizeMode>
+    <StockOverlayPos>2</StockOverlayPos>
+    <DarkMode>0</DarkMode>
+  </Icon>
+</AxialisIconCollection>

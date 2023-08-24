@@ -1,3 +1,2 @@
-Remove-Item -Recurse .\_srv\*
-Copy-Item -Path C:\srv\* -Destination .\_srv\ -Recurse
-Remove-Item -Recurse .\_srv\.idea
+Remove-Item -Recurse .\srv\http\
+Copy-Item -Path C:\srv\http\ -Destination .\srv\http\ -Recurse

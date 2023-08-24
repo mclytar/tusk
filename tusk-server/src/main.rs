@@ -1,8 +1,15 @@
-mod api;
-mod gui;
-mod os;
+#![warn(missing_docs)]
 
-#[allow(unused)] use log::{debug, error, info, trace, warn};
+//! This is the main executable of Tusk Server.
+//!
+//! It runs a different setup depending on the operating system;
+//! in both cases, after the setup, the executable runs as a service/daemon in background, logging
+//! to the system logger.
+
+pub mod api;
+pub mod error;
+pub mod gui;
+pub mod os;
 
 use actix_session::SessionMiddleware;
 use actix_web::{App, guard, HttpServer, web};
@@ -13,18 +20,28 @@ use tusk_backend::config::{TuskConfigurationFile, TuskData};
 
 fn main() {
     if let Err(e) = os::run() {
-        error!("{e}");
+        log::error!("{e}");
     }
 }
 
+/// Spawns a new Actix server without activating it.
+///
+/// To activate the server, simply use `.await` on the `Ok()` result.
+///
+/// # Error
+///
+/// This function may return an error.
+/// The most common causes are:
+/// - The configuration file cannot be found, cannot be read, has an invalid format or has missing items.
+/// - TODO
 pub fn server_spawn() -> Result<(actix_web::dev::Server, TuskData)> {
     os::initialize_logger();
 
     let tusk = TuskConfigurationFile::import()?
         .into_tusk()?;
-    info!("Configuration loaded");
+    log::info!("Configuration loaded");
     let redis_store = actix_web::rt::System::new().block_on(tusk.redis_store());
-    info!("Connected to Redis ");
+    log::info!("Connected to Redis ");
 
     tusk.apply_migrations()?;
     let config = tusk.tls_config();
@@ -57,18 +74,13 @@ async fn server_run(server: actix_web::dev::Server) -> std::io::Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use actix_web::test;
+mod test {
+    use log::LevelFilter;
 
-    #[actix_web::test]
-    async fn test_get_() {
-        let app = test::init_service(App::new().configure(super::configure)).await;
-        let req = test::TestRequest::get()
-            .uri("http://localhost/")
-            .to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), http::StatusCode::OK);
-        assert_eq!(body::to_bytes(resp.into_body()).await.unwrap(), "This is the index!");
+    pub fn init() {
+        let _ = env_logger::builder()
+            .filter_level(LevelFilter::Info)
+            .is_test(true)
+            .try_init();
     }
 }

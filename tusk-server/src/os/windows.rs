@@ -1,3 +1,5 @@
+//! Defines the necessary functions to make the server run as a Windows Service.
+
 use std::{
     ffi::OsString,
 };
@@ -20,21 +22,38 @@ const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
 
 define_windows_service!(ffi_service_main, tusk_server_main);
 
+/// Runs the server.
 pub fn run() -> Result<()> {
-    service_dispatcher::start(SERVICE_NAME, ffi_service_main)?;
+    let mut run_cli = false;
+    let mut args = std::env::args();
+    while let Some(arg) = args.next() {
+        if arg == "--cli" { run_cli = true; }
+    }
+    if run_cli {
+        let (server, _) = crate::server_spawn()?;
+
+        crate::server_run(server)?;
+    } else {
+        service_dispatcher::start(SERVICE_NAME, ffi_service_main)?;
+    }
+
     Ok(())
 }
 
+/// Initializes the Windows logger, which stores the log information in the event register.
 pub fn initialize_logger() {
     winlog::init("Tusk Server").unwrap();
 }
 
+/// Wraps the function [`run_service`] so that any error occurred during the initialization phase
+/// is logged.
 pub fn tusk_server_main(_arguments: Vec<OsString>) {
     if let Err(e) = run_service() {
         log::error!("{e}");
     }
 }
 
+/// Runs the main server as a Windows Service.
 pub fn run_service() -> Result<()> {
     let (server, tusk) = crate::server_spawn()?;
     let handle = server.handle();
