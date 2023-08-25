@@ -1,1 +1,0 @@
-pub const CONFIGURATION_FILE_PATH: &str = "C:\\ProgramData\\Tusk\\tusk.toml";

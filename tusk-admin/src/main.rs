@@ -1,8 +1,8 @@
+//! This crate is a CLI executable to administrate the Tera server.
+
 #![warn(missing_docs)]
 
-pub mod error;
 pub mod os;
-
 pub mod user;
 
 use clap::{Parser, Subcommand};

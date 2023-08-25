@@ -1,24 +1,39 @@
+//! This module contains the necessary structures and methods for error handling.
+
 use std::fmt::{Display, Formatter};
 
+/// A `Result` type with a preconfigured error of type [`tusk_core::error::Error`](crate::error::Error).
 pub type Result<T> = std::result::Result<T, Error>;
 pub use diesel::result::Error as DieselQueryError;
 
+/// Defines the possible errors when starting the Tusk server.
 #[derive(Debug)]
 pub enum Error {
+    /// An error originated while reading from the configuration file.
     ConfigurationFileError(toml::de::Error),
+    /// An error originated while trying to connect to the database.
     DatabaseConnectionError(diesel::prelude::ConnectionError),
+    /// An error originated while querying the database.
     DatabaseQueryError(diesel::result::Error),
+    /// An error originated while performing IO operations.
     IOError(std::io::Error),
+    /// An error originated while performing a database migration.
     MigrationError(Box<dyn std::error::Error + Send + Sync>),
+    /// An error originated while attempting to create a connection pool.
     R2D2Error(r2d2::Error),
+    /// An error originated while attempting to create a secure channel.
     RustlsError(rustls::Error),
+    /// An error originated while parsing the Tera templates.
     TeraParseError(tera::Error),
+    /// An error originated while starting the server as a Unix daemon.
     #[cfg(unix)]
     UnixError(nix::errno::Errno),
+    /// An error originated while starting the server as a Windows service.
     #[cfg(windows)]
     WindowsServiceError(windows_service::Error),
 }
 impl Error {
+    /// Creates an [`Error`] from a boxed migration error.
     pub fn from_migration_error(e: Box<dyn std::error::Error + Send + Sync>) -> Error {
         Error::MigrationError(e)
     }

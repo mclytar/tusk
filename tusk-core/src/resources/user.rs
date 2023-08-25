@@ -1,3 +1,6 @@
+//! Data structures for the `user` table.
+
+use diesel::deserialize::FromSql;
 use diesel::prelude::*;
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
@@ -5,16 +8,30 @@ use uuid::Uuid;
 
 use crate::error::Result;
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Queryable, Selectable, Deserialize)]
+/// Wraps a `Secret` so that it is possible to query it from an SQL table.
+#[derive(Clone, Debug, Deserialize)]
+pub struct Password(Secret<String>);
+impl<DB: diesel::backend::Backend> Queryable<diesel::sql_types::Text, DB> for Password
+where String: FromSql<diesel::sql_types::Text, DB>{
+    type Row = String;
+
+    fn build(row: Self::Row) -> diesel::deserialize::Result<Self> {
+        Ok(Password(Secret::new(row)))
+    }
+}
+
+#[derive(Clone, Debug, Queryable, Selectable, Deserialize)]
 #[diesel(table_name = crate::schema::user)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
+/// Defines a user.
 pub struct User {
-    pub user_id: Uuid,
-    pub username: String,
+    user_id: Uuid,
+    username: String,
     #[serde(skip_serializing)]
-    pub password: String
+    password: Password
 }
 impl User {
+    /// Inserts a new user in the table and returns the corresponding result.
     pub fn create<U: AsRef<str>>(db_connection: &mut PgConnection, username: U, password: Secret<String>) -> Result<User> {
         use crate::schema::user;
         let username = username.as_ref();
@@ -30,7 +47,7 @@ impl User {
 
         Ok(user)
     }
-
+    /// Reads an user from the table, given the user ID.
     pub fn read(db_connection: &mut PgConnection, user_id: Uuid) -> Result<User> {
         use crate::schema::user;
 
@@ -40,7 +57,7 @@ impl User {
 
         Ok(user)
     }
-
+    /// Reads an user from the table, given the username.
     pub fn read_by_username<S: AsRef<str>>(db_connection: &mut PgConnection, username: S) -> Result<User> {
         use crate::schema::user;
         let username = username.as_ref();
@@ -51,7 +68,7 @@ impl User {
 
         Ok(user)
     }
-
+    /// Reads all users from the table.
     pub fn read_all(db_connection: &mut PgConnection) -> Result<Vec<User>> {
         use crate::schema::user;
 
@@ -60,13 +77,22 @@ impl User {
 
         Ok(users)
     }
-
+    /// Verifies correctness of the user's password by comparing its hash with the hash stored
+    /// in the database.
     pub fn verify_password(&self, password: &Secret<String>) -> bool {
         let password = password.expose_secret();
-        bcrypt::verify(password, &self.password)
+        bcrypt::verify(password, self.password.0.expose_secret())
             .unwrap()
     }
-
+    /// Returns the ID of the current user.
+    pub fn id(&self) -> Uuid {
+        self.user_id
+    }
+    /// Returns the username of the current user.
+    pub fn username(&self) -> &str {
+        &self.username
+    }
+    /// Deletes an user given the user ID.
     pub fn delete_by_id(db_connection: &mut PgConnection, user_id: Uuid) -> Result<usize> {
         use crate::schema::user;
 
@@ -78,7 +104,7 @@ impl User {
 
         Ok(num_deleted)
     }
-
+    /// Deletes an user given the username.
     pub fn delete_by_username(db_connection: &mut PgConnection, username: String) -> Result<usize> {
         use crate::schema::user;
 

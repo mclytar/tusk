@@ -15,8 +15,8 @@ use actix_session::SessionMiddleware;
 use actix_web::{App, guard, HttpServer, web};
 use actix_web::middleware::Logger;
 
-use tusk_backend::error::Result;
-use tusk_backend::config::{TuskConfigurationFile, TuskData};
+use tusk_core::error::Result;
+use tusk_core::config::{TuskConfigurationFile, TuskData};
 
 fn main() {
     if let Err(e) = os::run() {

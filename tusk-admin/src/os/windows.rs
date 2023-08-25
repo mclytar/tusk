@@ -1,3 +1,5 @@
+//! This module contains the necessary functions to manage the server as a Windows service.
+
 use std::ffi::OsString;
 use std::time::{Duration, Instant};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -8,8 +10,9 @@ use windows_service::{
 };
 use windows_service::service::ServiceState;
 
-use tusk_backend::error::Result;
+use tusk_core::error::Result;
 
+/// Installs the server as a Windows service.
 pub fn service_install() -> Result<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
@@ -53,7 +56,7 @@ pub fn service_install() -> Result<()> {
 
     Ok(())
 }
-
+/// Uninstalls the server as a Windows service.
 pub fn service_uninstall() -> Result<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
@@ -98,7 +101,7 @@ pub fn service_uninstall() -> Result<()> {
 
     Ok(())
 }
-
+/// Starts the server as a Windows service.
 pub fn service_start() -> Result<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
@@ -129,7 +132,7 @@ pub fn service_start() -> Result<()> {
 
     Ok(())
 }
-
+/// Stops the server as a Windows service.
 pub fn service_stop() -> Result<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
@@ -160,7 +163,7 @@ pub fn service_stop() -> Result<()> {
 
     Ok(())
 }
-
+/// Reloads the server and its configuration.
 pub fn service_reload() -> Result<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
@@ -180,10 +183,10 @@ pub fn service_reload() -> Result<()> {
 
     Ok(())
 }
-
-pub fn print_error(e: tusk_backend::error::Error) {
+/// Prints an error.
+pub fn print_error(e: tusk_core::error::Error) {
     match e {
-        tusk_backend::error::Error::WindowsServiceError(ServiceError::Winapi(e)) => println!("Cannot perform operation: {e}"),
+        tusk_core::error::Error::WindowsServiceError(ServiceError::Winapi(e)) => println!("Cannot perform operation: {e}"),
         _ => println!("Cannot perform operation: {e}")
     }
 }

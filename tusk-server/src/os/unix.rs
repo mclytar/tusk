@@ -3,7 +3,7 @@
 use systemd::daemon;
 use systemd_journal_logger::JournalLog;
 
-use tusk_backend::error::Result;
+use tusk_core::error::Result;
 
 /// Runs the server.
 pub fn run() -> Result<()> {

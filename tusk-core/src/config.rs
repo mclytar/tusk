@@ -1,6 +1,9 @@
+//! This module contains the necessary structures and functions to load the configuration from
+//! `tusk.toml`.
+
 use std::fs::File;
 use std::io::BufReader;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 #[allow(unused)] use log::{error, warn, info, debug, trace};
 
@@ -12,8 +15,10 @@ use tera::Tera;
 
 use crate::error::{Error, Result};
 
+/// `actix_web::web::Data` wrapper for [`TuskConfiguration`].
 pub type TuskData = web::Data<TuskConfiguration>;
 
+/// Returns a TLS server configuration.
 pub fn spawn_tls_configuration() -> Result<rustls::ServerConfig> {
     #[cfg(windows)]
         let file = File::open("C:\\ProgramData\\Tusk\\tusk.crt")?;
@@ -52,31 +57,38 @@ pub fn spawn_tls_configuration() -> Result<rustls::ServerConfig> {
 
     Ok(config)
 }
-
+/// Represents the `diesel` section of the `tusk.toml` file.
 #[derive(Clone, Debug, Deserialize)]
 pub struct DieselConfigurationSection {
-    pub url: String
+    url: String
 }
-
+/// Represents the `redis` section of the `tusk.toml` file.
 #[derive(Clone, Debug, Deserialize)]
 pub struct RedisConfigurationSection {
-    pub url: String
+    url: String
 }
-
+/// Represents the `tusk` section of the `tusk.toml` file.
 #[derive(Clone, Debug, Deserialize)]
 pub struct TuskConfigurationSection {
-    pub log_level: log::LevelFilter,
-    pub www_domain: String,
-    pub api_domain: String
+    log_level: log::LevelFilter,
+    www_domain: String,
+    api_domain: String
 }
-
+/// Represents the file `tusk.toml`.
 #[derive(Clone, Debug, Deserialize)]
 pub struct TuskConfigurationFile {
-    pub diesel: DieselConfigurationSection,
-    pub redis: RedisConfigurationSection,
-    pub tusk: TuskConfigurationSection
+    diesel: DieselConfigurationSection,
+    redis: RedisConfigurationSection,
+    tusk: TuskConfigurationSection
 }
 impl TuskConfigurationFile {
+    /// Imports `tusk.toml` from a known location.
+    ///
+    /// ## On Windows
+    /// Imports `C:\ProgramData\Tusk\tusk.toml`.
+    ///
+    /// ## On Unix
+    /// Imports `/etc/tusk/tusk.toml`.
     pub fn import() -> Result<TuskConfigurationFile> {
         let data = std::fs::read_to_string(crate::os::CONFIGURATION_FILE_PATH)?;
         let file = toml::from_str(&data)?;
@@ -84,6 +96,7 @@ impl TuskConfigurationFile {
         Ok(file)
     }
 
+    /// Finalizes the configuration file and constructs a [`TuskConfiguration`] structure.
     pub fn into_tusk(self) -> Result<TuskConfiguration> {
         let TuskConfigurationSection { log_level, www_domain, api_domain } = self.tusk;
         log::set_max_level(log_level);
@@ -126,16 +139,17 @@ impl TuskConfigurationFile {
     }
 }
 
+/// Represents a configuration for the Redis session storage.
 #[derive(Clone)]
 pub struct SessionConfiguration {
     redis_uri: String,
     session_key: actix_web::cookie::Key,
     session_lifecycle: actix_session::config::PersistentSession
 }
-
+/// Represents a configuration for the Tusk server.
 #[derive(Clone)]
 pub struct TuskConfiguration {
-    pub tera: Arc<RwLock<Tera>>,
+    tera: Arc<RwLock<Tera>>,
     www_domain: String,
     api_domain: String,
     database_pool: Arc<Pool<ConnectionManager<PgConnection>>>,
@@ -143,23 +157,24 @@ pub struct TuskConfiguration {
     tls_server_configuration: rustls::ServerConfig
 }
 impl TuskConfiguration {
+    /// Returns a configuration wrapped in `actix_web::web::Data` to store into the web server.
     pub fn to_data(&self) -> web::Data<TuskConfiguration> {
         web::Data::new(self.clone())
     }
-
+    /// Returns the domain from which the HTML pages and the static files are served.
     pub fn www_domain(&self) -> &str {
         &self.www_domain
     }
-
+    /// Returns the domain from which the REST API is served.
     pub fn api_domain(&self) -> &str {
         &self.api_domain
     }
-
+    /// Returns a connection to the database.
     pub fn database_connect(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
         let db_pool = self.database_pool.get()?;
         Ok(db_pool)
     }
-
+    /// Applies all the pending migrations.
     pub fn apply_migrations(&self) -> Result<()> {
         const MIGRATIONS: diesel_migrations::EmbeddedMigrations = embed_migrations!("../migrations");
 
@@ -182,7 +197,15 @@ impl TuskConfiguration {
 
         Ok(())
     }
-
+    /// Returns a reference to the current Tera state.
+    pub fn tera(&self) -> LockResult<RwLockReadGuard<Tera>> {
+        self.tera.read()
+    }
+    /// Returns a mutable reference to the current Tera state.
+    pub fn tera_mut(&self) -> LockResult<RwLockWriteGuard<Tera>> {
+        self.tera.write()
+    }
+    /// Builds a new Tera context embedding the global variables given by the configuration.
     pub fn tera_context(&self) -> tera::Context {
         let mut context = tera::Context::new();
 
@@ -192,21 +215,21 @@ impl TuskConfiguration {
 
         context
     }
-
+    /// Builds and returns a Redis connection to store the session cookies.
     pub async fn redis_store(&self) -> actix_session::storage::RedisSessionStore {
         actix_session::storage::RedisSessionStore::new(&self.session_configuration.redis_uri)
             .await
             .expect("Redis connection")
     }
-
+    /// Returns the current session key.
     pub fn session_key(&self) -> actix_web::cookie::Key {
         self.session_configuration.session_key.clone()
     }
-
+    /// Returns the current session life cycle.
     pub fn session_lifecycle(&self) -> actix_session::config::PersistentSession {
         self.session_configuration.session_lifecycle.clone()
     }
-
+    /// Returns the current TLS configuration.
     pub fn tls_config(&self) -> rustls::ServerConfig {
         self.tls_server_configuration.clone()
     }

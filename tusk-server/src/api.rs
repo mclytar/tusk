@@ -14,9 +14,9 @@ use actix_session::Session;
 use actix_web::{HttpRequest, HttpResponse, Responder};
 use actix_web::http::header;
 use actix_web::web::{self, ServiceConfig};
-use tusk_backend::config::TuskData;
-use tusk_backend::error::Error as TuskError;
-use tusk_backend::resources::User;
+use tusk_core::config::TuskData;
+use tusk_core::error::Error as TuskError;
+use tusk_core::resources::User;
 use tusk_derive::rest_resource;
 use crate::error::{HttpError, HttpIfError, HttpOkOr, HttpResult, WrapResult};
 use crate::api::directory::{DirectoryPath, DirectoryItemRead, DirectoryItemCreate, FileCreate, FolderCreate};
@@ -43,7 +43,7 @@ impl SessionResource {
 
         let user = User::read_by_username(&mut db_connection, session_create.username())
             .map_err(|e| match e {
-                TuskError::DatabaseQueryError(tusk_backend::error::DieselQueryError::NotFound) => {
+                TuskError::DatabaseQueryError(tusk_core::error::DieselQueryError::NotFound) => {
                     // TODO: fake attempt login
                     log::warn!("Failed login attempt for user `{}`", session_create.username());
                     HttpError::unauthorized()

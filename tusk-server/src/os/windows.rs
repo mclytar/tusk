@@ -15,7 +15,7 @@ use windows_service::{
     service_dispatcher,
 };
 
-use tusk_backend::error::Result;
+use tusk_core::error::Result;
 
 const SERVICE_NAME: &str = "tusk-server";
 const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
@@ -62,7 +62,7 @@ pub fn run_service() -> Result<()> {
     let mut watcher = notify::recommended_watcher(move |res| {
         match res {
             Ok(_) => {
-                let mut tera = match tusk_copy.tera.write() {
+                let mut tera = match tusk_copy.tera_mut() {
                     Ok(lock) => lock,
                     Err(e) => { log::error!("{e}"); return; }
                 };
@@ -92,7 +92,7 @@ pub fn run_service() -> Result<()> {
                 ServiceControlHandlerResult::NoError
             },
             ServiceControl::Continue => {
-                let mut tera = match tusk.tera.write() {
+                let mut tera = match tusk.tera_mut() {
                     Ok(lock) => lock,
                     Err(e) => {
                         log::error!("{e}");

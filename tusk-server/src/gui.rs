@@ -7,7 +7,7 @@ use actix_session::Session;
 use actix_web::{HttpResponse, Responder};
 use actix_web::http::header::LOCATION;
 use actix_web::web::{self, ServiceConfig};
-use tusk_backend::config::TuskConfiguration;
+use tusk_core::config::TuskConfiguration;
 
 /// Defines the global resource for a web page.
 ///
@@ -23,7 +23,7 @@ impl GUIResource {
         let mut context = tusk.tera_context();
         context.insert("page", path.as_str());
 
-        let tera = match tusk.tera.read() {
+        let tera = match tusk.tera() {
             Ok(t) => t,
             Err(e) => {
                 log::error!("Poison error: {e}");

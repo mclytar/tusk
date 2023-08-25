@@ -1,22 +1,10 @@
+//! This crate contains the core items needed to run the server.
+
 #![warn(missing_docs)]
 
 pub mod config;
 pub mod error;
 pub mod os;
 pub mod resources;
+#[allow(missing_docs)]
 pub mod schema;
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}

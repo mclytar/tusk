@@ -1,1 +1,0 @@
-pub const CONFIGURATION_FILE_PATH: &str = "/etc/tusk/tusk.toml";

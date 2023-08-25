@@ -2947,14 +2947,14 @@ dependencies = [
  "nix",
  "secrecy",
  "systemctl",
- "tusk-backend",
+ "tusk-core",
  "windows-service",
  "windows-sys 0.48.0",
  "winlog",
 ]
 
 [[package]]
-name = "tusk-backend"
+name = "tusk-core"
 version = "0.1.0"
 dependencies = [
  "actix-session",
@@ -3012,7 +3012,7 @@ dependencies = [
  "tera",
  "tokio",
  "toml",
- "tusk-backend",
+ "tusk-core",
  "tusk-derive",
  "windows-service",
  "winlog",
