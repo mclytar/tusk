@@ -2,7 +2,8 @@
 //! `tusk.toml`.
 
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, ErrorKind};
+use std::path::PathBuf;
 use std::sync::{Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 #[allow(unused)] use log::{error, warn, info, debug, trace};
@@ -72,7 +73,10 @@ pub struct RedisConfigurationSection {
 pub struct TuskConfigurationSection {
     log_level: log::LevelFilter,
     www_domain: String,
-    api_domain: String
+    api_domain: String,
+    tera_templates: String,
+    static_files: String,
+    user_directories: String,
 }
 /// Represents the file `tusk.toml`.
 #[derive(Clone, Debug, Deserialize)]
@@ -85,12 +89,26 @@ impl TuskConfigurationFile {
     /// Imports `tusk.toml` from a known location.
     ///
     /// ## On Windows
-    /// Imports `C:\ProgramData\Tusk\tusk.toml`.
+    /// Tries to import `tusk.toml` from the same folder as the executable;
+    /// if this fails, falls back to importing `C:\ProgramData\Tusk\tusk.toml`.
     ///
     /// ## On Unix
-    /// Imports `/etc/tusk/tusk.toml`.
+    /// Tries to import `tusk.toml` from the same folder as the executable;
+    /// if this fails, falls back to importing `/etc/tusk/tusk.toml`.
     pub fn import() -> Result<TuskConfigurationFile> {
-        let data = std::fs::read_to_string(crate::os::CONFIGURATION_FILE_PATH)?;
+        log::info!("Executing from {}.", PathBuf::from(".").canonicalize()?.display());
+        let data = match std::fs::read_to_string("./tusk.toml") {
+            Ok(data) => {
+                log::info!("Loaded configuration from tusk.toml.");
+                data
+            },
+            Err(e) if e.kind() == ErrorKind::NotFound => {
+                let data = std::fs::read_to_string(crate::os::CONFIGURATION_FILE_PATH)?;
+                log::info!("Loaded configuration from {}.", crate::os::CONFIGURATION_FILE_PATH);
+                data
+            },
+            Err(e) => Err(e)?
+        };
         let file = toml::from_str(&data)?;
 
         Ok(file)
@@ -98,10 +116,13 @@ impl TuskConfigurationFile {
 
     /// Finalizes the configuration file and constructs a [`TuskConfiguration`] structure.
     pub fn into_tusk(self) -> Result<TuskConfiguration> {
-        let TuskConfigurationSection { log_level, www_domain, api_domain } = self.tusk;
+        let TuskConfigurationSection { log_level, www_domain, api_domain, tera_templates, static_files, user_directories } = self.tusk;
         log::set_max_level(log_level);
 
-        let tera = Tera::new("/test/http/**/*.tera")?;
+        let mut tera_path = PathBuf::from(tera_templates);
+        tera_path.push("**");
+        tera_path.push("*.tera");
+        let tera = Tera::new(tera_path.to_string_lossy().as_ref())?;
         for template in tera.get_template_names() {
             info!("Loaded Tera template {template}");
         }
@@ -130,6 +151,8 @@ impl TuskConfigurationFile {
             tera,
             www_domain,
             api_domain,
+            static_files,
+            user_directories,
             database_pool,
             session_configuration,
             tls_server_configuration
@@ -152,6 +175,8 @@ pub struct TuskConfiguration {
     tera: Arc<RwLock<Tera>>,
     www_domain: String,
     api_domain: String,
+    static_files: String,
+    user_directories: String,
     database_pool: Arc<Pool<ConnectionManager<PgConnection>>>,
     session_configuration: SessionConfiguration,
     tls_server_configuration: rustls::ServerConfig
@@ -168,6 +193,14 @@ impl TuskConfiguration {
     /// Returns the domain from which the REST API is served.
     pub fn api_domain(&self) -> &str {
         &self.api_domain
+    }
+    /// Returns the path from which to serve static files.
+    pub fn static_files(&self) -> &str {
+        &self.static_files
+    }
+    /// Returns the path where user files are stored.
+    pub fn user_directories(&self) -> &str {
+        &self.user_directories
     }
     /// Returns a connection to the database.
     pub fn database_connect(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {

@@ -1,7 +1,0 @@
-[redis]
-url = "redis://127.0.0.1:6379"
-
-[tusk]
-log_level = "info"
-www_domain = "localhost"
-api_domain = "localhost"

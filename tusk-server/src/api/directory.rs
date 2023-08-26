@@ -8,28 +8,46 @@ use actix_multipart::form::MultipartForm;
 use actix_multipart::form::tempfile::TempFile;
 use serde::{Deserialize, Serializer};
 use serde::ser::SerializeMap;
-use crate::error::{HttpError, HttpOkOr};
+use crate::error::{HttpError, HttpIfError, HttpOkOr};
 
 /// A path in the server folder.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct DirectoryPath {
+    root: PathBuf,
     path: PathBuf
 }
 impl DirectoryPath {
-    #[cfg(all(unix, not(test)))]
-    const ROOT: &'static str = "/srv/directory/";
-    #[cfg(all(windows, not(test)))]
-    const ROOT: &'static str = "\\\\?\\C:\\srv\\directory\\";
-    #[cfg(all(unix, test))]
-    const ROOT: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/test/srv/directory/");
-    #[cfg(all(windows, test))]
-    const ROOT: &'static str = concat!("\\\\?\\", env!("CARGO_MANIFEST_DIR"), "\\test\\srv\\directory\\");
+    /// Creates a new `DirectoryPath` from a root, given in the `tusk.toml` configuration file,
+    /// and a given path.
+    pub fn with_root<R: AsRef<Path>, P: AsRef<Path>>(root: R, path: P) -> Result<Self, HttpError> {
+        let root = root.as_ref().canonicalize()
+            .or_internal_server_error()
+            .with_log_error()?;
+        let query = path.as_ref().to_path_buf();
+        let mut path = root.clone();
+        path.push(query);
+
+        log::info!("Queried path {}", path.display());
+
+        path = path.canonicalize()
+            .or_not_found()?;
+
+        if !path.starts_with(&root) {
+            return Err(HttpError::not_found());
+        }
+
+        let path = DirectoryPath { root, path };
+
+        Ok(path)
+    }
 
     /// Returns `true` if this path belongs to the user named `username` and `false` otherwise.
     pub fn belongs_to<S: AsRef<str>>(&self, username: S) -> bool {
         let username = username.as_ref();
-        let public_path = DirectoryPath::ROOT.to_owned() + ".public";
-        let user_path = DirectoryPath::ROOT.to_owned() + username;
+        let mut public_path = self.root.clone();
+        public_path.push(".public");
+        let mut user_path = self.root.clone();
+        user_path.push(username);
 
         self.path.starts_with(public_path) || self.path.starts_with(user_path)
     }
@@ -103,28 +121,6 @@ impl DirectoryPath {
             .or_not_found()?;
 
         Ok(result)
-    }
-}
-impl TryFrom<&str> for DirectoryPath {
-    type Error = HttpError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let query: PathBuf = PathBuf::from(value);
-        let mut path = PathBuf::from(DirectoryPath::ROOT);
-        path.push(query);
-
-        log::info!("Queried path {}", path.display());
-
-        path = path.canonicalize()
-            .or_not_found()?;
-
-        if !path.starts_with(DirectoryPath::ROOT) {
-            return Err(HttpError::not_found());
-        }
-
-        let path = DirectoryPath { path };
-
-        Ok(path)
     }
 }
 impl AsRef<Path> for DirectoryPath {
@@ -386,10 +382,8 @@ mod test {
     fn test_directory_path_permission() {
         init();
 
-        log::info!("Root: {}", DirectoryPath::ROOT);
-
-        let public_path = DirectoryPath::try_from(".public/some_folder/some_file.txt").unwrap();
-        let user_path = DirectoryPath::try_from("test/some_folder/some_file.txt").unwrap();
+        let public_path = DirectoryPath::with_root("../srv/directory/", ".public/some_folder/some_file.txt").unwrap();
+        let user_path = DirectoryPath::with_root("../srv/directory/", "test/some_folder/some_file.txt").unwrap();
 
         assert!(public_path.authorize_for("test").is_ok());
         assert!(public_path.authorize_for("dummy").is_ok());
@@ -401,9 +395,7 @@ mod test {
     fn test_directory_path_create() {
         init();
 
-        log::info!("Root: {}", DirectoryPath::ROOT);
-
-        let mut user_path = DirectoryPath::try_from("test/").unwrap();
+        let mut user_path = DirectoryPath::with_root("../srv/directory/", "test/").unwrap();
         user_path.push("my_folder");
         let mut user_path_folder = user_path.clone();
         user_path_folder.push("my_other_folder");

@@ -58,10 +58,10 @@ pub fn server_spawn() -> Result<(actix_web::dev::Server, TuskData)> {
         ).wrap(Logger::default())
         .service(web::scope("/v1")
             .guard(guard::Host(tusk.api_domain()))
-            .configure(api::configure)
+            .configure(|cfg| api::configure(cfg, &tusk))
         ).service(web::scope("")
             .guard(guard::Host(tusk.www_domain()))
-            .configure(gui::configure)
+            .configure(|cfg| gui::configure(cfg, &tusk))
     )).bind_rustls(("0.0.0.0", 443), config)?
         .run();
 

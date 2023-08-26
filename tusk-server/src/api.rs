@@ -14,7 +14,7 @@ use actix_session::Session;
 use actix_web::{HttpRequest, HttpResponse, Responder};
 use actix_web::http::header;
 use actix_web::web::{self, ServiceConfig};
-use tusk_core::config::TuskData;
+use tusk_core::config::{TuskConfiguration, TuskData};
 use tusk_core::error::Error as TuskError;
 use tusk_core::resources::User;
 use tusk_derive::rest_resource;
@@ -82,11 +82,11 @@ impl SessionResource {
 pub struct DirectoryResource;
 #[rest_resource("/directory/{filename:.*}")]
 impl DirectoryResource {
-    async fn get(session: Session, req: HttpRequest) -> HttpResult {
+    async fn get(tusk: TuskData, session: Session, req: HttpRequest) -> HttpResult {
         let session: SessionRead = session.try_into()?;
-        let path: DirectoryPath = req.match_info()
-            .query("filename")
-            .try_into()?;
+        let path = req.match_info()
+            .query("filename");
+        let path = DirectoryPath::with_root(tusk.user_directories(), path)?;
         path.authorize_for(session.username())?;
 
         if path.is_directory() {
@@ -103,11 +103,11 @@ impl DirectoryResource {
         }
     }
 
-    async fn delete(session: Session, req: HttpRequest) -> HttpResult {
+    async fn delete(tusk: TuskData, session: Session, req: HttpRequest) -> HttpResult {
         let session: SessionRead = session.try_into()?;
-        let path: DirectoryPath = req.match_info()
-            .query("filename")
-            .try_into()?;
+        let path = req.match_info()
+            .query("filename");
+        let path = DirectoryPath::with_root(tusk.user_directories(), path)?;
         path.authorize_for(session.username())?;
 
         path.delete()?;
@@ -117,11 +117,11 @@ impl DirectoryResource {
             .wrap_ok()
     }
 
-    async fn post(session: Session, data: MultipartForm<DirectoryItemCreate>, req: HttpRequest) -> HttpResult {
+    async fn post(tusk: TuskData, session: Session, data: MultipartForm<DirectoryItemCreate>, req: HttpRequest) -> HttpResult {
         let session: SessionRead = session.try_into()?;
-        let mut path: DirectoryPath = req.match_info()
-            .query("filename")
-            .try_into()?;
+        let path = req.match_info()
+            .query("filename");
+        let mut path = DirectoryPath::with_root(tusk.user_directories(), path)?;
         path.authorize_for(session.username())?;
 
         let data = data.into_inner();
@@ -169,7 +169,7 @@ impl DirectoryResource {
 }
 
 /// Configures the server by adding the corresponding API resources.
-pub fn configure(cfg: &mut ServiceConfig) {
+pub fn configure(cfg: &mut ServiceConfig, _tusk: &TuskConfiguration) {
     cfg.service(SessionResource)
         .service(DirectoryResource);
     // TODO...

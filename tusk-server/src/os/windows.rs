@@ -4,6 +4,7 @@ use std::{
     ffi::OsString,
 };
 use std::time::Duration;
+use log::LevelFilter;
 use notify::{RecursiveMode, Watcher};
 use windows_service::{
     define_windows_service,
@@ -30,10 +31,16 @@ pub fn run() -> Result<()> {
         if arg == "--cli" { run_cli = true; }
     }
     if run_cli {
+        env_logger::builder()
+            .filter_level(LevelFilter::Info)
+            .init();
+
         let (server, _) = crate::server_spawn()?;
 
         crate::server_run(server)?;
     } else {
+        winlog::init("Tusk Server").unwrap();
+
         service_dispatcher::start(SERVICE_NAME, ffi_service_main)?;
     }
 
@@ -42,7 +49,7 @@ pub fn run() -> Result<()> {
 
 /// Initializes the Windows logger, which stores the log information in the event register.
 pub fn initialize_logger() {
-    winlog::init("Tusk Server").unwrap();
+    /*winlog::init("Tusk Server").unwrap();*/
 }
 
 /// Wraps the function [`run_service`] so that any error occurred during the initialization phase

@@ -66,8 +66,8 @@ impl GUIResource {
 
 /// Configures the server by adding the `/static` service for serving static files and the `/*`
 /// service for serving web pages.
-pub fn configure(cfg: &mut ServiceConfig) {
-    cfg.service(actix_files::Files::new("/static", "/test/http/static"));
+pub fn configure(cfg: &mut ServiceConfig, tusk: &TuskConfiguration) {
+    cfg.service(actix_files::Files::new("/static", tusk.static_files()));
     cfg.route("/{path:.*}", web::get().to(GUIResource::get));
 }
 
