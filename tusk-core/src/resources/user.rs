@@ -105,7 +105,9 @@ impl User {
         Ok(num_deleted)
     }
     /// Deletes an user given the username.
-    pub fn delete_by_username(db_connection: &mut PgConnection, username: String) -> Result<usize> {
+    pub fn delete_by_username<S: AsRef<str>>(db_connection: &mut PgConnection, username: S) -> Result<usize> {
+        let username = username.as_ref();
+
         use crate::schema::user;
 
         let selected = user::table

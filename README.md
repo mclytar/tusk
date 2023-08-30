@@ -9,6 +9,31 @@ This is another attempt to build a web server for my home. The server will conta
 Probably, this will be replaced in the future by a fully functioning instance of `mammoth` web server (what is that?
 Well, I still need to define some details about that).
 
+## Tasks before publication (on `crates.io`, GitHub and the production server).
+
+- [x] Add roles.
+  - [x] Role `admin`: can see the Dashboard.
+  - [x] Role `directory`: can have a Directory.
+  - [x] Role `user`: can see the apps and the Support tab.
+- [ ] Add check on startup for whether all `directory` roles have a Directory.
+- [ ] Add watch and self-reload for Unix.
+- [ ] Add icon path and type on configuration file.
+- [ ] Add `/settings` page, and allow users to change their password.
+- [ ] Check that everything is consistent and safe on the backend part.
+- [ ] **Done with the backend!**
+- [ ] Adjust icons handling.
+- [ ] Make sure that premium icons don't leak.
+- [ ] Check that everything is consistent and safe on the frontend part.
+- [ ] **Done with the frontend!**
+- [ ] `git push` on development machine.
+- [ ] Check that everything works on development and fix if not.
+- [ ] `git tag -a 0.1`
+- [ ] `git push` on GitHub and on production machine.
+- [ ] `git checkout -b develop`
+- [ ] Start developing new features! (Each one in its own branch).
+  - *The most urgent features are:*
+  - [ ] Tech support.
+
 ## Roadmap
 
 This software will run on an Ubuntu Server machine and will therefore be tailored to it. Furthermore, this software

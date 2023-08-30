@@ -111,8 +111,8 @@ class FullPath {
     /**
      * Returns the full string of the path, including the user.
      *
-     * If **user** is `test` and **path** is `/some/path`, then the returned string will be
-     * `test/some/path`.
+     * If **user** is `dummy` and **path** is `/some/path`, then the returned string will be
+     * `dummy/some/path`.
      */
     get(): string {
         let path = this._path;

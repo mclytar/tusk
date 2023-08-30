@@ -4,10 +4,11 @@
 //! interface (_i.e._, static files, web pages, etc.).
 
 use actix_session::Session;
-use actix_web::{HttpResponse, Responder};
+use actix_web::{HttpResponse};
 use actix_web::http::header::LOCATION;
 use actix_web::web::{self, ServiceConfig};
 use tusk_core::config::TuskConfiguration;
+use crate::error::{HttpError, HttpIfError, HttpOkOr, HttpResult, WrapResult};
 
 /// Defines the global resource for a web page.
 ///
@@ -15,8 +16,8 @@ use tusk_core::config::TuskConfiguration;
 /// Tera template which is parsed and then sent to the client as a response.
 pub struct GUIResource;
 impl GUIResource {
-    async fn get(session: Session, data: web::Data<TuskConfiguration>, path: web::Path<String>) -> impl Responder {
-        let tusk = data.as_ref();
+    async fn get(session: Session, data: web::Data<TuskConfiguration>, path: web::Path<String>) -> HttpResult {
+        let tusk = data.into_inner();
         let mut path = path.into_inner();
         if path.is_empty() { path = String::from("index"); }
 
@@ -24,11 +25,10 @@ impl GUIResource {
         context.insert("page", path.as_str());
 
         let tera = match tusk.tera() {
-            Ok(t) => t,
-            Err(e) => {
-                log::error!("Poison error: {e}");
-                return HttpResponse::InternalServerError().finish();
-            }
+            Ok(tera) => tera,
+            Err(e) => return HttpError::internal_server_error()
+                .wrap_err()
+                .with(|_| log::error!("{e}"))
         };
 
         if &path != "login" {
@@ -36,14 +36,21 @@ impl GUIResource {
                 Ok(Some(username)) => username,
                 Ok(None) => return HttpResponse::Found()
                     .insert_header((LOCATION, "/login"))
-                    .finish(),
+                    .finish()
+                    .wrap_ok(),
                 Err(e) => {
                     log::error!("{e}");
-                    return HttpResponse::InternalServerError().finish()
+                    return HttpError::internal_server_error().wrap_err()
                 }
             };
 
+            let mut db_connection = tusk.database_connect()
+                .or_internal_server_error()?;
+            let roles = tusk_core::resources::Role::read_by_user_username(&mut db_connection, &username)
+                .or_internal_server_error()?;
+
             context.insert("username", &username);
+            context.insert("roles", &roles);
         }
 
         let body = match tera.render(&format!("pages/{path}.tera"), &context) {
@@ -51,16 +58,16 @@ impl GUIResource {
             Err(e) => return match e.kind {
                 tera::ErrorKind::TemplateNotFound(e) => {
                     log::error!("Template not found: {e}");
-                    HttpResponse::NotFound().finish()
+                    HttpError::not_found()
                 },
                 _ => {
                     log::error!("Tera error: {e}");
-                    HttpResponse::InternalServerError().finish()
+                    HttpError::internal_server_error()
                 }
-            }
+            }.wrap_err()
         };
 
-        HttpResponse::Ok().body(body)
+        HttpResponse::Ok().body(body).wrap_ok()
     }
 }
 

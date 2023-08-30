@@ -30,7 +30,7 @@ pub enum UserCommand {
     /// Lists all the users.
     List,
     /// Removes an user from the database.
-    Delete {
+    Remove {
         /// Name of the user.
         ///
         /// If omitted, will be asked.
@@ -43,7 +43,7 @@ pub fn main(args: User) -> Result<()> {
     match args.command {
         UserCommand::Add { username } => add(username),
         UserCommand::List => list(),
-        UserCommand::Delete { username } => delete(username)
+        UserCommand::Remove { username } => remove(username)
     }
 }
 
@@ -93,7 +93,7 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 /// Removes an user from the database.
-pub fn delete(username: Option<String>) -> Result<()> {
+pub fn remove(username: Option<String>) -> Result<()> {
     let username = if let Some(username) = username {
         username
     } else {

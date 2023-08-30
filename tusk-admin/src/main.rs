@@ -3,6 +3,7 @@
 #![warn(missing_docs)]
 
 pub mod os;
+pub mod role;
 pub mod user;
 
 use clap::{Parser, Subcommand};
@@ -26,6 +27,8 @@ enum Command {
     Stop,
     /// Reloads the configuration.
     Reload,
+    /// Role management commands.
+    Role(role::Role),
     /// User management commands.
     User(user::User)
 }
@@ -39,6 +42,7 @@ fn main() {
         Command::Start => os::service_start(),
         Command::Stop => os::service_stop(),
         Command::Reload => os::service_reload(),
+        Command::Role(role) => role::main(role),
         Command::User(args) => user::main(args)
     };
 

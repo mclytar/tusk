@@ -71,7 +71,9 @@
         }
     </style>
     <script>
-        document['username'] = "{{ username }}"
+        document['username'] = "{{ username }}";
+        document['roles'] = [];
+        {% for role in roles %}document['roles'].push({ "name": "{{ role.name }}", "display": "{{ role.display }}" });{% endfor %}
     </script>
 {% endblock %}
 {% block body %}
@@ -92,10 +94,17 @@
         </div>
         <div class="d-flex flex-column ms-2 me-2 p-2">
             <img src="/static/favicon.ico" alt="" width="128" height="128" class="d-inline-block ms-auto me-auto">
-            <a href="/" class="d-flex fs-5 mt-2 mb-2 text-light text-decoration-none ms-auto me-auto">McLytar</a>
+            <a href="/" class="d-flex fs-5 mt-2 mb-2 text-light text-decoration-none ms-auto me-auto">{{ username }}</a>
             <div class="d-flex justify-content-center">
-                <span class="badge tusk-role tusk-role-Admin">Admin</span>
-                <span class="badge tusk-role tusk-role-User">User</span>
+                {% set_global user_has_role_admin = false -%}
+                {% set_global user_has_role_directory = false -%}
+                {% set_global user_has_role_user = false -%}
+                {% for role in roles -%}
+                    <span class="badge tusk-role tusk-role-{{ role.name }}">{{ role.display }}</span>
+                    {% if role.name == "admin" %}{% set_global user_has_role_admin = true %}{% endif -%}
+                    {% if role.name == "directory" %}{% set_global user_has_role_directory = true %}{% endif -%}
+                    {% if role.name == "user" %}{% set_global user_has_role_user = true %}{% endif -%}
+                {% endfor -%}
             </div>
         </div>
         <hr>
@@ -104,14 +113,19 @@
                 <i class="bi-house pe-none me-2"></i>
                 Home
             </a>
+            {% if user_has_role_admin -%}
             <a href="/" class="nav-link disabled">
                 <i class="bi-speedometer2 pe-none me-2"></i>
                 Coming soon...<!--Dashboard-->
             </a>
+            {% endif -%}
+            {% if user_has_role_directory -%}
             <a href="/directory" class="nav-link {% if page == "directory" %}active{% else %}text-white{% endif %}">
                 <i class="bi-cloud pe-none me-2"></i>
                 Cloud
             </a>
+            {% endif -%}
+            {% if user_has_role_user -%}
             <a href="/" class="nav-link disabled">
                 <i class="bi-card-checklist pe-none me-2"></i>
                 Coming soon...<!--Tasks-->
@@ -124,6 +138,7 @@
                 <i class="bi-life-preserver pe-none me-2"></i>
                 Coming soon...<!--Support-->
             </a>
+            {% endif -%}
         </nav>
         <nav class="nav nav-pills flex-column mt-auto">
             <a href="#" class="nav-link text-danger-emphasis" onclick="aLogOut_click(this)">
