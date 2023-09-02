@@ -6,6 +6,8 @@ use actix_web::{HttpResponse, ResponseError};
 use actix_web::body::BoxBody;
 use actix_web::http::header::{HeaderMap, TryIntoHeaderPair};
 use actix_web::http::StatusCode;
+use tusk_core::DieselError;
+use tusk_core::error::Error as TuskError;
 
 /// Wraps the structure in one of the `Result` variants.
 pub trait WrapResult: Sized {
@@ -260,6 +262,9 @@ pub trait HttpIfError<T> {
     fn with_header<P: TryIntoHeaderPair>(self, header: P) -> Result<T, HttpError>;
     /// Adds an HTTP response body in case the item is the error variant.
     fn with_body<S: AsRef<str>>(self, body: S) -> Result<T, HttpError>;
+    /// Converts a possible `NOT FOUND` error into a generic `UNAUTHORIZED` error and computes a
+    /// fake password hash, so that no information is leaked about the user existence.
+    fn with_authentication_failure<U: AsRef<str>, P: AsRef<str>>(self, username: U, password: P) -> Result<T, HttpError>;
 }
 impl<T> HttpIfError<T> for Result<T, HttpError> {
     fn with<F: FnOnce(&mut HttpError)>(self, handler: F) -> Result<T, HttpError> {
@@ -325,6 +330,21 @@ impl<T> HttpIfError<T> for Result<T, HttpError> {
                 e.body = Some(body.as_ref().to_owned());
                 Err(e)
             }
+        }
+    }
+
+    fn with_authentication_failure<U: AsRef<str>, P: AsRef<str>>(self, username: U, password: P) -> Result<T, HttpError> {
+        let username = username.as_ref();
+
+        match self {
+            Ok(value) => Ok(value),
+            Err(mut e) if e.status_code == StatusCode::NOT_FOUND => {
+                log::warn!("Failed login attempt for user `{}`", username);
+                e.status_code = StatusCode::UNAUTHORIZED;
+                let _check = tusk_core::resources::User::fake_password_check(password);
+                Err(e)
+            },
+            Err(e) => Err(e)
         }
     }
 }
@@ -539,5 +559,16 @@ impl From<StatusCode> for HttpError {
             body: None,
             inner: None
         }
+    }
+}
+impl From<tusk_core::error::Error> for HttpError {
+    fn from(value: tusk_core::error::Error) -> Self {
+        let status_code = match value {
+            TuskError::DatabaseQueryError(DieselError::NotFound) => StatusCode::NOT_FOUND,
+            TuskError::IOError(e) if e.kind() == std::io::ErrorKind::AlreadyExists => StatusCode::CONFLICT,
+            TuskError::IOError(e) if e.kind() == std::io::ErrorKind::NotFound => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR
+        };
+        Self::from(status_code)
     }
 }

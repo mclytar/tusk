@@ -18,7 +18,7 @@ Well, I still need to define some details about that).
 - [x] Add check on startup for whether all `directory` roles have a Directory.
 - [x] Add watch and self-reload for Unix.
 - [x] Add icon type on configuration file.
-- [ ] Add `/settings` page, and allow users to change their password.
+- [x] Add `/settings` page, and allow users to change their password.
 - [ ] Check that everything is consistent and safe on the backend part.
 - [ ] **Done with the backend!**
 - [ ] Adjust icons handling.

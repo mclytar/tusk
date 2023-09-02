@@ -8,3 +8,6 @@ pub mod os;
 pub mod resources;
 #[allow(missing_docs)]
 pub mod schema;
+
+pub use diesel::PgConnection;
+pub use diesel::result::Error as DieselError;

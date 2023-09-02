@@ -82,8 +82,8 @@
     <nav class="navbar navbar-expand-xl navbar-dark fixed-top bg-primary p-3">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
-                <img src="/static/favicon.ico" alt="Logo" width="32" height="32" class="d-none d-sm-inline-block align-text-top">
-                <span class="ms-2">Home Server</span>
+                <img src="/static/tusk.svg" alt="Logo" width="32" height="32" class="d-none d-sm-inline-block align-text-top" style="filter: drop-shadow(0 0 1pt white)">
+                <span class="ms-2">Tusk Server</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="divNavbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -95,7 +95,7 @@
             <button type="button" class="btn-close ms-auto" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
         </div>
         <div class="d-flex flex-column ms-2 me-2 p-2">
-            <img src="/static/favicon.ico" alt="" width="128" height="128" class="d-inline-block ms-auto me-auto">
+            <img src="/static/tusk.svg" alt="" width="128" height="128" class="d-inline-block ms-auto me-auto">
             <a href="/" class="d-flex fs-5 mt-2 mb-2 text-light text-decoration-none ms-auto me-auto">{{ username }}</a>
             <div class="d-flex justify-content-center">
                 {% set_global user_has_role_admin = false -%}
@@ -111,7 +111,7 @@
         </div>
         <hr>
         <nav class="nav nav-pills flex-column">
-            <a href="/" class="nav-link{% if page == "index" %} active{% endif %}">
+            <a href="/" class="nav-link {% if page == "index" %}active{% else %}text-white{% endif %}">
                 <i class="bi-house pe-none me-2"></i>
                 Home
             </a>
@@ -143,6 +143,10 @@
             {% endif -%}
         </nav>
         <nav class="nav nav-pills flex-column mt-auto">
+            <a href="/settings" class="nav-link {% if page == "settings" %}active{% else %}text-primary-emphasis{% endif %}">
+                <i class="bi-gear-wide-connected pe-none me-2"></i>
+                Settings
+            </a>
             <a href="#" class="nav-link text-danger-emphasis" onclick="aLogOut_click(this)">
                 <i class="bi-box-arrow-right pe-none me-2"></i>
                 Log out

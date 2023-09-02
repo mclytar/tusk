@@ -1,0 +1,164 @@
+{% extends "template/page.tera" %}
+{% block head %}
+    {{ super() }}
+    <script src="https://cdn.jsdelivr.net/npm/@zxcvbn-ts/core@2.0.0/dist/zxcvbn-ts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxcvbn-ts/language-common@2.0.0/dist/zxcvbn-ts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxcvbn-ts/language-en@2.0.0/dist/zxcvbn-ts.js"></script>
+{% endblock %}
+{% block main %}
+    <section class="container-fluid bg-body-tertiary p-4">
+        <h1>Settings</h1>
+        <br/>
+        <div class="row mb-3">
+            <label for="username" class="col-sm-2 col-form-label">Username:</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="username" disabled>
+            </div>
+        </div>
+        <br/>
+        <hr/>
+        <h2>Change password</h2>
+        <br />
+        <form name="password_change" action="">
+            <div class="row mb-3">
+                <label for="password_old" class="col-sm-2 col-form-label">Old password</label>
+                <div class="col-sm-10">
+                    <input type="password" class="form-control" id="password_old" oninput="on_password_change_password_old_input(this)">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label for="password_new" class="col-sm-2 col-form-label">New password</label>
+                <div class="col-sm-10">
+                    <input type="password" class="form-control" id="password_new" oninput="on_password_change_password_new_input(this)">
+                    <div class="progress mt-3" role="progressbar">
+                        <div id="password_change_pg_strength_value" class="progress-bar bg-alert w-0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label for="password_repeat" class="col-sm-2 col-form-label">Repeat new password</label>
+                <div class="col-sm-10">
+                    <input type="password" class="form-control" id="password_repeat">
+                </div>
+            </div>
+            <p>The new password should be at least 8 characters long. Please, only choose strong passwords.</p>
+            <div id="password_change_warning_container"></div>
+            <div id="password_change_alert_container"></div>
+            <div class="row mb-3">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="button" class="btn btn-danger rounded-2" onclick="on_password_change_confirm()">Confirm</button>
+                </div>
+            </div>
+        </form>
+    </section>
+    <script>
+        let input_username = document.getElementById("username");
+        input_username.value = document['username'];
+
+        const password_check_options = {
+            translations: zxcvbnts['language-en'].translations,
+            graphs: zxcvbnts['language-common'].adjacencyGraphs,
+            dictionary: {
+                ...zxcvbnts['language-common'].dictionary,
+                ...zxcvbnts['language-en'].dictionary
+            }
+        };
+        zxcvbnts.core.zxcvbnOptions.setOptions(password_check_options);
+
+        function password_change_show_warning(message) {
+            let alert_content = `<div class="alert alert-warning alert-dismissible" role="alert">${message}</div>`;
+            let alert_container = document.querySelector("#password_change_warning_container");
+            if (message.length > 0) {
+                alert_container.innerHTML = alert_content;
+            } else {
+                alert_container.innerHTML = "";
+            }
+        }
+
+        function password_change_show_alert(message, kind="danger") {
+            let alert_content = `<div class="alert alert-${kind} alert-dismissible" role="alert">${message}</div>`;
+            let alert_container = document.querySelector("#password_change_alert_container");
+            if (message.length > 0) {
+                alert_container.innerHTML = alert_content;
+            } else {
+                alert_container.innerHTML = "";
+            }
+        }
+
+        function on_password_change_password_old_input(sender) {
+
+        }
+
+        function on_password_change_password_new_input(sender) {
+            let last_value = sender.value;
+            let score = zxcvbnts.core.zxcvbn(last_value, [document['username'], "Tusk"]);
+            let strength_bar = document.getElementById("password_change_pg_strength_value");
+
+            setTimeout(() => {
+                if (last_value !== sender.value) return;
+
+                if (score.feedback.warning === "" && score.feedback.suggestions.length === 0) {
+                    password_change_show_warning("");
+                } else {
+                    let score_message = score.feedback.warning;
+                    if (score_message !== "") score_message += "<br/><br/>";
+                    score_message += score.feedback.suggestions
+                        .map((suggestion) => `<b>Suggestion:</b> ${suggestion}`)
+                        .join("<br/>");
+                    password_change_show_warning(score_message);
+                }
+            }, 500);
+
+            strength_bar.classList.remove("w-0", "w-25", "w-50", "w-75", "w-100");
+            strength_bar.classList.remove("bg-success", "bg-warning", "bg-danger");
+
+            switch (score.score) {
+                case 0:
+                    strength_bar.classList.add("w-0", "bg-danger");
+                    break;
+                case 1:
+                    strength_bar.classList.add("w-25", "bg-danger");
+                    break;
+                case 2:
+                    strength_bar.classList.add("w-50", "bg-warning");
+                    break;
+                case 3:
+                    strength_bar.classList.add("w-75", "bg-warning");
+                    break;
+                case 4:
+                    strength_bar.classList.add("w-100", "bg-success");
+                    break;
+            }
+
+        }
+
+        function on_password_change_confirm() {
+            let form = document.forms.namedItem("password_change");
+
+            if (form['password_new'].value !== form['password_repeat'].value) {
+                password_change_show_alert("The two passwords do not match.");
+                form["password_new"].classList.add("is-invalid");
+                form["password_repeat"].classList.add("is-invalid");
+                return;
+            }
+
+            let data = JSON.stringify({ "password": form["password_new"].value, "proof": form["password_old"].value })
+
+            fetch(`/v1/users/${document['username']}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: data
+            }).then((res) => {
+                if (res.status === 401) {
+                    form["password_old"].classList.add("is-invalid");
+                    password_change_show_alert("Incorrect password.");
+                } else if (res.status === 200) {
+                    password_change_show_alert(`Success!<br/><br/>For security reasons, you will be disconnected.`, "success");
+                    setTimeout(() => window.location.href = "/login", 3000);
+                }
+            });
+        }
+    </script>
+{% endblock %}

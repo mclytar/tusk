@@ -5,8 +5,9 @@
 //! Helper serializable/deserializable structures are contained in the respective modules, and they
 //! address the relative CRUD methods.
 
-pub mod session;
 pub mod directory;
+pub mod session;
+pub mod users;
 
 use actix_files::NamedFile;
 use actix_multipart::form::MultipartForm;
@@ -14,66 +15,14 @@ use actix_session::Session;
 use actix_web::{HttpRequest, HttpResponse, Responder};
 use actix_web::http::header;
 use actix_web::web::{self, ServiceConfig};
+use secrecy::ExposeSecret;
 use tusk_core::config::{TuskConfiguration, TuskData};
-use tusk_core::error::Error as TuskError;
 use tusk_core::resources::User;
 use tusk_derive::rest_resource;
 use crate::error::{HttpError, HttpIfError, HttpOkOr, HttpResult, WrapResult};
 use crate::api::directory::{DirectoryPath, DirectoryItemRead, DirectoryItemCreate, FileCreate, FolderCreate};
 use crate::api::session::{SessionCreate, SessionRead};
-
-/// Represents the `/session` REST resource.
-///
-/// The `/session` resource is responsible for authenticating users and keeping user sessions.
-pub struct SessionResource;
-#[rest_resource("/session")]
-impl SessionResource {
-    async fn get(session: Session) -> HttpResult {
-        let session: SessionRead = session.try_into()
-            .or_unauthorized()?;
-
-        HttpResponse::Ok()
-            .json(session)
-            .wrap_ok()
-    }
-
-    async fn post(tusk: TuskData, session: Session, web::Form(session_create): web::Form<SessionCreate>) -> HttpResult {
-        let mut db_connection = tusk.database_connect()
-            .or_internal_server_error()?;
-
-        let user = User::read_by_username(&mut db_connection, session_create.username())
-            .map_err(|e| match e {
-                TuskError::DatabaseQueryError(tusk_core::error::DieselQueryError::NotFound) => {
-                    // TODO: fake attempt login
-                    log::warn!("Failed login attempt for user `{}`", session_create.username());
-                    HttpError::unauthorized()
-                },
-                e => HttpError::internal_server_error().error(e)
-            })?;
-
-        if !user.verify_password(session_create.password()) {
-            log::warn!("Failed login attempt for user `{}`", session_create.username());
-            return Err(HttpError::unauthorized());
-        }
-
-        session.renew();
-        session.insert("username", session_create.username())
-            .or_internal_server_error()
-            .with_log_error()?;
-        log::info!("User {} logged in", session_create.username());
-
-        HttpResponse::Created()
-            .finish()
-            .wrap_ok()
-    }
-
-    async fn delete(session: Session) -> impl Responder {
-        session.clear();
-        session.purge();
-
-        HttpResponse::Ok().finish()
-    }
-}
+use crate::api::users::UserPatchData;
 
 /// Represents the `/directory` REST resource.
 ///
@@ -168,10 +117,99 @@ impl DirectoryResource {
     }
 }
 
+/// Represents the `/session` REST resource.
+///
+/// The `/session` resource is responsible for authenticating users and keeping user sessions.
+pub struct SessionResource;
+#[rest_resource("/session")]
+impl SessionResource {
+    async fn get(session: Session) -> HttpResult {
+        let session: SessionRead = session.try_into()
+            .or_unauthorized()?;
+
+        HttpResponse::Ok()
+            .json(session)
+            .wrap_ok()
+    }
+
+    async fn post(tusk: TuskData, session: Session, web::Form(session_create): web::Form<SessionCreate>) -> HttpResult {
+        let mut db_connection = tusk.database_connect()
+            .or_internal_server_error()?;
+
+        let user = User::read_by_username(&mut db_connection, session_create.username())
+            .map_err(|e| HttpError::from(e))
+            .with_authentication_failure(session_create.username(), session_create.password().expose_secret())?;
+
+        if !user.verify_password(session_create.password()) {
+            log::warn!("Failed login attempt for user `{}`", session_create.username());
+            return Err(HttpError::unauthorized());
+        }
+
+        session.renew();
+        session.insert("username", session_create.username())
+            .or_internal_server_error()
+            .with_log_error()?;
+        log::info!("User {} logged in", session_create.username());
+
+        HttpResponse::Created()
+            .finish()
+            .wrap_ok()
+    }
+
+    async fn delete(session: Session) -> impl Responder {
+        session.clear();
+        session.purge();
+
+        HttpResponse::Ok().finish()
+    }
+}
+
+/// Represents the `/users` REST resource.
+///
+/// The `/users` resource is used for user management.
+pub struct UserCollectionResource;
+impl UserCollectionResource {
+
+}
+
+/// Represents the `/users/{username}` REST resource.
+///
+/// The `/users/{username}` resource is used for management of a specific user.
+pub struct UserResource;
+#[rest_resource("/users/{username}")]
+impl UserResource {
+    async fn patch(tusk: TuskData, session: Session, web::Json(data): web::Json<UserPatchData>, resource_path: web::Path<String>) -> HttpResult {
+        let session_data: SessionRead = session.clone().try_into()?;
+        let username = resource_path.into_inner();
+
+        let mut db_connection = tusk.database_connect()
+            .or_internal_server_error()?;
+
+        let initiator_roles = tusk_core::resources::Role::read_by_user_username(&mut db_connection, session_data.username())
+            .or_internal_server_error()
+            .with_log_error()?;
+
+        if session_data.username() != username && !initiator_roles.iter().any(|r| r.name() == "admin") {
+            return HttpError::forbidden()
+                .wrap_err();
+        }
+
+        let response = data.apply(&mut db_connection, session_data.username(), username)?;
+
+        if data.only_owner() {
+            session.clear();
+            session.purge();
+        }
+
+        Ok(response)
+    }
+}
+
 /// Configures the server by adding the corresponding API resources.
 pub fn configure(cfg: &mut ServiceConfig, _tusk: &TuskConfiguration) {
-    cfg.service(SessionResource)
-        .service(DirectoryResource);
+    cfg.service(DirectoryResource)
+        .service(SessionResource)
+        .service(UserResource);
     // TODO...
 }
 
