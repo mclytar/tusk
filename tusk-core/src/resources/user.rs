@@ -68,6 +68,20 @@ impl User {
 
         Ok(user)
     }
+    /// Reads all the users with the given role.
+    pub fn read_by_role_name<S: AsRef<str>>(db_connection: &mut PgConnection, name: S) -> Result<Vec<User>> {
+        let name = name.as_ref();
+
+        use crate::schema::{user, role, user_role};
+
+        let users = user::table
+            .inner_join(user_role::table.inner_join(role::table))
+            .filter(role::name.eq(name))
+            .select(User::as_select())
+            .load::<User>(db_connection)?;
+
+        Ok(users)
+    }
     /// Reads all users from the table.
     pub fn read_all(db_connection: &mut PgConnection) -> Result<Vec<User>> {
         use crate::schema::user;

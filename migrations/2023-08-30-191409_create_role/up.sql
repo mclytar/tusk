@@ -13,5 +13,6 @@ CREATE TABLE "user_role" (
                         user_id                     UUID                            NOT NULL,
                         role_id                     UUID                            NOT NULL,
                         FOREIGN KEY (user_id) REFERENCES "user"(user_id),
-                        FOREIGN KEY (role_id) REFERENCES "role"(role_id)
+                        FOREIGN KEY (role_id) REFERENCES "role"(role_id),
+                        UNIQUE (user_id, role_id)
 );

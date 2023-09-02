@@ -51,6 +51,10 @@ impl GUIResource {
 
             context.insert("username", &username);
             context.insert("roles", &roles);
+
+            let mut user_dir = std::path::PathBuf::from(tusk.user_directories());
+            user_dir.push(&username);
+            context.insert("has_own_dir", &user_dir.exists());
         }
 
         let body = match tera.render(&format!("pages/{path}.tera"), &context) {

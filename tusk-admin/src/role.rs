@@ -1,5 +1,6 @@
 //! This module contains the necessary functions and data structures for the subcommand `user`.
 
+use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 use tusk_core::config::TuskConfigurationFile;
@@ -37,6 +38,14 @@ pub enum RoleCommand {
         #[clap(long = "to")]
         username: String
     },
+    /// Removes a role from an user.
+    Cancel {
+        /// Name of the role.
+        role: String,
+        /// Username of the user.
+        #[clap(long = "from")]
+        username: String
+    },
     /// Lists all the roles.
     List,
     /// Removes an user from the database.
@@ -53,6 +62,7 @@ pub fn main(args: Role) -> Result<()> {
     match args.command {
         RoleCommand::Add { name, display } => add(name, display),
         RoleCommand::Assign { role, username } => assign(role, username),
+        RoleCommand::Cancel { role, username } => cancel(role, username),
         RoleCommand::List => list(),
         RoleCommand::Remove { name } => remove(name)
     }
@@ -95,7 +105,28 @@ pub fn assign(role: String, username: String) -> Result<()> {
     tusk_core::resources::Role::assign(&mut db_connection, &role)
         .to(&username)?;
 
+    let mut user_dir_path = PathBuf::from(tusk.user_directories());
+    user_dir_path.push(&username);
+
+    if &role == "directory" && !user_dir_path.exists() {
+        println!("Warning: path `{}` does not exist.", user_dir_path.display());
+    }
+
     println!("Role `{role}` assigned to user `{username}`.");
+
+    Ok(())
+}
+/// Cancels a role assignation to an user.
+pub fn cancel(role: String, username: String) -> Result<()> {
+    let tusk = TuskConfigurationFile::import()?
+        .into_tusk()?;
+
+    let mut db_connection = tusk.database_connect()?;
+
+    tusk_core::resources::Role::assign(&mut db_connection, &role)
+        .cancel_from(&username)?;
+
+    println!("Role `{role}` cancelled from user `{username}`.");
 
     Ok(())
 }
@@ -120,10 +151,10 @@ pub fn list() -> Result<()> {
         .unwrap_or(4)
         .max(4);
 
-    println!("{:role_max_len$} {:display_max_len$}", "Role", "Display");
-    println!("{:-^role_max_len$} {:-^display_max_len$}", "", "");
+    println!("{:role_max_len$}  {:display_max_len$}", "Role", "Display");
+    println!("{:-^role_max_len$}  {:-^display_max_len$}", "", "");
     for role in roles {
-        println!("{:role_max_len$} {:display_max_len$}", role.name(), role.display());
+        println!("{:role_max_len$}  {:display_max_len$}", role.name(), role.display());
     }
 
     Ok(())

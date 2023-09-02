@@ -1,0 +1,184 @@
+{% extends "template/page.tera" %}
+{% block main %}
+    <style>
+        .split {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .gutter {
+            background-color: #eee;
+            background-repeat: no-repeat;
+            background-position: 50%;
+        }
+
+        .gutter.gutter-horizontal {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+            cursor: col-resize;
+        }
+
+        html[data-bs-theme="dark"] img.light {
+            display: none;
+        }
+
+        html[data-bs-theme="light"] img.dark {
+            display: none;
+        }
+
+        @media (prefers-color-scheme: light) {
+            html:not([data-bs-theme="dark"]):not([data-bs-theme="light"]) img.dark {
+                display: none;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            html:not([data-bs-theme="dark"]):not([data-bs-theme="light"]) img.light {
+                display: none;
+            }
+        }
+    </style>
+    <section class="sf-component-file-explorer file-explorer container-fluid bg-body-tertiary rounded-3 p-4">
+        <h1>File explorer</h1>
+        <header class="tab-content">
+            <nav class="nav nav-tabs">
+                <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#FileExplorer_Tabs_Home" href="#">Home</a>
+                <a class="nav-link" data-bs-toggle="tab" data-bs-target="#FileExplorer_Tabs_View" href="#">View</a>
+            </nav>
+            <!-- Home -->
+            <section id="FileExplorer_Tabs_Home" class="bg-body tab-pane active">
+                <button class="btn" name="button_refresh">
+                    {{ tusk::ui_icon_pair_lg(name="refresh") }}
+                    <div href="#">Refresh</div>
+                </button>
+                <div class="vr"></div>
+                <button class="btn" name="button_new_folder">
+                    {{ tusk::ui_icon_pair_lg(name="folder-new") }}
+                    <div href="#">New folder</div>
+                </button>
+                <section class="btn-group-vertical" role="group">
+                    <button disabled name="button_upload_file" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="file-upload") }} Upload file</button>
+                    <button disabled name="button_upload_folder" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="folder-upload") }} Upload folder</button>
+                    <section class="btn-group">
+                        <button disabled class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ tusk::ui_icon_pair_sm(name="document-new") }} New
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <button name="button_upload_file" class="dropdown-item icon-link">{{ tusk::ui_file_icon_sm(name="txt") }} Text file</button>
+                            </li>
+                        </ul>
+                    </section>
+                </section>
+                <div class="vr"></div>
+                <button class="btn" name="button_delete" disabled>
+                    {{ tusk::ui_icon_pair_lg(name="delete") }}
+                    <div href="#">Delete</div>
+                </button>
+                <div class="vr"></div>
+                <section class="btn-group-vertical" role="group">
+                    <button name="button_select_all" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="select-all") }} Select all</button>
+                    <button name="button_select_none" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="select-none") }} Deselect all</button>
+                    <button name="button_select_inverse" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="select-inverse") }} Invert selection</button>
+                </section>
+                <div class="vr"></div>
+            </section>
+            <!-- View -->
+            <section id="FileExplorer_Tabs_View" class="bg-body tab-pane">
+                <section class="btn-group-vertical" role="group">
+                    <input id="radio_view_large_icons" type="radio" class="btn-check" name="radio_view" value="large-icons">
+                    <label for="radio_view_large_icons" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="view-large-icons") }} Large icons</label>
+                    <input id="radio_view_medium_icons" type="radio" class="btn-check" name="radio_view" value="medium-icons" checked>
+                    <label for="radio_view_medium_icons" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="view-medium-icons") }} Medium icons</label>
+                    <input id="radio_view_small_icons" type="radio" class="btn-check" name="radio_view" value="small-icons">
+                    <label for="radio_view_small_icons" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="view-small-icons") }} Small icons</label>
+                </section>
+                <section class="btn-group-vertical" role="group">
+                    <input id="radio_view_content" type="radio" class="btn-check" name="radio_view" value="content">
+                    <label for="radio_view_content" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="view-content") }} Content</label>
+                    <input id="radio_view_list" type="radio" class="btn-check" name="radio_view" value="list">
+                    <label for="radio_view_list" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="view-list") }} List</label>
+                    <input id="radio_view_details" type="radio" class="btn-check" name="radio_view" value="details">
+                    <label for="radio_view_details" class="btn icon-link">{{ tusk::ui_icon_pair_sm(name="view-details") }} Details</label>
+                </section>
+                <div class="vr"></div>
+            </section>
+        </header>
+        <nav>
+            <div>
+                <button name="button_undo" class="btn btn-sm" disabled>{{ tusk::ui_icon_pair_sm(name="undo") }}</button>
+                <button name="button_redo" class="btn btn-sm" disabled>{{ tusk::ui_icon_pair_sm(name="redo") }}</button>
+                <button name="button_parent" class="btn btn-sm" disabled>{{ tusk::ui_icon_pair_sm(name="folder-up") }}</button>
+                <div class="vr"></div>
+                <div class="btn-group">
+                    {% if has_own_dir %}
+                        <button name="button_breadcrumb_root" type="button" class="btn btn-sm icon-link">{{ tusk::ui_icon_pair_sm(name="user") }} {{ username }}</button>
+                    {% else %}
+                        <button name="button_breadcrumb_root" type="button" class="btn btn-sm icon-link">{{ tusk::ui_icon_pair_sm(name="world") }} Public</button>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm icon-link dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
+                    <ul class="dropdown-menu">
+                        <li><button name="button_user_public" class="dropdown-item icon-link">{{ tusk::ui_icon_pair_sm(name="world") }} Public</button></li>
+                        <li><button name="button_user_self" class="dropdown-item icon-link" {% if has_own_dir == false %}disabled{% endif %}>{{ tusk::ui_icon_pair_sm(name="user") }} {{  username }}</button></li>
+                    </ul>
+                </div>
+                <ol id="Breadcrumbs" class="sf-component-breadcrumb breadcrumb"></ol>
+            </div>
+        </nav>
+        <main>
+            <div class="split">
+                <div id="splitDirTree">
+                    <ul id="DirectoryTree" class="sf-component-directory-tree tree-view">
+                        <!-- Directory tree view goes here -->
+                    </ul>
+                </div>
+                <div id="splitFileExp">
+                    <ul id="FileViewer" class="sf-component-file-viewer medium-icons">
+                        <!-- File view goes here -->
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </section>
+    <script type="module" src="/static/js/file_explorer.js"></script>
+    <script type="module">
+        Split(['#splitDirTree', '#splitFileExp'], { sizes: [25, 75] });
+    </script>
+{% endblock %}
+{% block end %}
+    <div id="Window_NotImplemented" class="modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Not implemented</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>The file viewer functionality is not yet implemented.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="dialog_new_folder" class="modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <header class="modal-header">
+                    <h5 class="modal-title">New folder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </header>
+                <main class="modal-body">
+                    <div class="mb-3">
+                        <label for="dialog_new_folder_name" class="form-label">Name of the folder:</label>
+                        <input type="text" name="folder_name" id="dialog_new_folder_name" class="form-control" placeholder="New Folder">
+                    </div>
+                </main>
+                <footer class="modal-footer">
+                    <button name="cancel" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button name="create" type="button" class="btn btn-primary" data-bs-dismiss="modal">Create</button>
+                </footer>
+            </div>
+        </div>
+    </div>
+{% endblock %}

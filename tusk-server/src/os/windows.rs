@@ -5,7 +5,6 @@ use std::{
 };
 use std::time::Duration;
 use log::LevelFilter;
-use notify::{RecursiveMode, Watcher};
 use windows_service::{
     define_windows_service,
     service::{
@@ -35,7 +34,9 @@ pub fn run() -> Result<()> {
             .filter_level(LevelFilter::Info)
             .init();
 
-        let (server, _) = crate::server_spawn()?;
+        let (server, tusk) = crate::server_spawn()?;
+
+        let _w = super::spawn_watcher(tusk);
 
         crate::server_run(server)?;
     } else {
@@ -46,12 +47,6 @@ pub fn run() -> Result<()> {
 
     Ok(())
 }
-
-/// Initializes the Windows logger, which stores the log information in the event register.
-pub fn initialize_logger() {
-    /*winlog::init("Tusk Server").unwrap();*/
-}
-
 /// Wraps the function [`run_service`] so that any error occurred during the initialization phase
 /// is logged.
 pub fn tusk_server_main(_arguments: Vec<OsString>) {
@@ -65,27 +60,7 @@ pub fn run_service() -> Result<()> {
     let (server, tusk) = crate::server_spawn()?;
     let handle = server.handle();
 
-    let tusk_copy = tusk.clone();
-    let mut watcher = notify::recommended_watcher(move |res| {
-        match res {
-            Ok(_) => {
-                let mut tera = match tusk_copy.tera_mut() {
-                    Ok(lock) => lock,
-                    Err(e) => { log::error!("{e}"); return; }
-                };
-                match tera.full_reload() {
-                    Ok(()) => {},
-                    Err(e) => { log::error!("{e}"); }
-                }
-            },
-            Err(e) => {
-                log::error!("{e}");
-            }
-        }
-    }).expect("event watcher");
-
-    watcher.watch(std::path::Path::new("/srv/http/"), RecursiveMode::Recursive)
-        .expect("watcher set up");
+    super::spawn_watcher(tusk.clone());
 
     let event_handler = move |control_event| -> ServiceControlHandlerResult {
         match control_event {

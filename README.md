@@ -15,9 +15,9 @@ Well, I still need to define some details about that).
   - [x] Role `admin`: can see the Dashboard.
   - [x] Role `directory`: can have a Directory.
   - [x] Role `user`: can see the apps and the Support tab.
-- [ ] Add check on startup for whether all `directory` roles have a Directory.
-- [ ] Add watch and self-reload for Unix.
-- [ ] Add icon path and type on configuration file.
+- [x] Add check on startup for whether all `directory` roles have a Directory.
+- [x] Add watch and self-reload for Unix.
+- [x] Add icon type on configuration file.
 - [ ] Add `/settings` page, and allow users to change their password.
 - [ ] Check that everything is consistent and safe on the backend part.
 - [ ] **Done with the backend!**

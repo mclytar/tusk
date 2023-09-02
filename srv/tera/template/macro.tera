@@ -1,0 +1,27 @@
+{% macro ui_icon_dark_sm(name) %}
+    <img class="dark" src="/static/ui/dark/small/{{ name }}.{{ ui_icon_filetype }}" />
+{% endmacro ui_icon %}
+{% macro ui_icon_light_sm(name) %}
+    <img class="light" src="/static/ui/light/small/{{ name }}.{{ ui_icon_filetype }}" />
+{% endmacro ui_icon %}
+{% macro ui_icon_pair_sm(name) %}
+    {{ self::ui_icon_dark_sm(name=name) }}{{ self::ui_icon_light_sm(name=name) }}
+{% endmacro ui_icon %}
+{% macro ui_icon_dark_lg(name) %}
+    <img class="dark" src="/static/ui/dark/large/{{ name }}.{{ ui_icon_filetype }}" />
+{% endmacro ui_icon %}
+{% macro ui_icon_light_lg(name) %}
+    <img class="light" src="/static/ui/light/large/{{ name }}.{{ ui_icon_filetype }}" />
+{% endmacro ui_icon %}
+{% macro ui_icon_pair_lg(name) %}
+    {{ self::ui_icon_dark_lg(name=name) }}{{ self::ui_icon_light_lg(name=name) }}
+{% endmacro ui_icon %}
+{% macro ui_file_icon_sm(name) %}
+    <img src="/static/ui/file-types/small/{{ name }}.{{ ui_icon_filetype }}" />
+{% endmacro ui_icon %}
+{% macro ui_file_icon_lg(name) %}
+    <img src="/static/ui/file-types/large/{{ name }}.{{ ui_icon_filetype }}" />
+{% endmacro ui_icon %}
+{% macro ui_file_icon_pair(name) %}
+    {{ self::ui_file_icon_sm(name=name) }}{{ self::ui_file_icon_lg(name=name) }}
+{% endmacro ui_icon %}

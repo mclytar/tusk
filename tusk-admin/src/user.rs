@@ -83,11 +83,25 @@ pub fn list() -> Result<()> {
 
     let users = tusk_core::resources::User::read_all(&mut db_connection)
         .unwrap_or_else(|_| panic!("TODO: handle error"));
+    let roles: Vec<String> = users.iter()
+        .map(|user| tusk_core::resources::Role::read_by_user_username(&mut db_connection, user.username()))
+        .map(|roles| roles.unwrap_or_else(|_| panic!("TODO: handle error")).into_iter().map(|r| r.name().to_owned()).collect::<Vec<String>>().join(","))
+        .collect();
 
-    println!("Username");
-    println!("--------");
-    for user in users {
-        println!("{}", user.username());
+    let username_max_len = users.iter()
+        .map(|user| user.username().len())
+        .max()
+        .unwrap_or(8)
+        .max(8);
+    let roles_max_len = roles.iter()
+        .map(|role_list| role_list.len())
+        .max()
+        .unwrap_or(8)
+        .max(8);
+    println!("{:username_max_len$}  {:roles_max_len$}", "Username", "Roles");
+    println!("{:-^username_max_len$}  {:-^roles_max_len$}", "", "");
+    for (user, role_list) in users.iter().zip(roles.iter()) {
+        println!("{:username_max_len$}  {:roles_max_len$}", user.username(), role_list);
     }
 
     Ok(())

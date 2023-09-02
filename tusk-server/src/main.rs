@@ -35,8 +35,6 @@ fn main() {
 /// - The configuration file cannot be found, cannot be read, has an invalid format or has missing items.
 /// - TODO
 pub fn server_spawn() -> Result<(actix_web::dev::Server, TuskData)> {
-    os::initialize_logger();
-
     let tusk = TuskConfigurationFile::import()?
         .into_tusk()?;
     log::info!("Configuration loaded");

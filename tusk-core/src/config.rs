@@ -77,6 +77,7 @@ pub struct TuskConfigurationSection {
     tera_templates: String,
     static_files: String,
     user_directories: String,
+    ui_icon_filetype: String
 }
 /// Represents the file `tusk.toml`.
 #[derive(Clone, Debug, Deserialize)]
@@ -116,10 +117,10 @@ impl TuskConfigurationFile {
 
     /// Finalizes the configuration file and constructs a [`TuskConfiguration`] structure.
     pub fn into_tusk(self) -> Result<TuskConfiguration> {
-        let TuskConfigurationSection { log_level, www_domain, api_domain, tera_templates, static_files, user_directories } = self.tusk;
+        let TuskConfigurationSection { log_level, www_domain, api_domain, tera_templates, static_files, user_directories, ui_icon_filetype } = self.tusk;
         log::set_max_level(log_level);
 
-        let mut tera_path = PathBuf::from(tera_templates);
+        let mut tera_path = PathBuf::from(&tera_templates);
         tera_path.push("**");
         tera_path.push("*.tera");
         let tera = Tera::new(tera_path.to_string_lossy().as_ref())?;
@@ -145,17 +146,31 @@ impl TuskConfigurationFile {
         let database_pool = Pool::new(connection_manager)?;
         let database_pool = Arc::new(database_pool);
 
+        let mut db_connection = database_pool.get()?;
+        let directory_users = crate::resources::User::read_by_role_name(&mut db_connection, "directory")?;
+        let directory_path = PathBuf::from(&user_directories);
+        log::info!("Checking directories in `{}`", directory_path.display());
+        for dir_user in directory_users {
+            let mut user_dir_path = directory_path.clone();
+            user_dir_path.push(dir_user.username());
+            if !user_dir_path.exists() {
+                log::warn!("Missing directory for user `{}`", dir_user.username());
+            }
+        }
+
         let tls_server_configuration = spawn_tls_configuration()?;
 
         let config = TuskConfiguration {
             tera,
             www_domain,
             api_domain,
+            tera_templates,
             static_files,
             user_directories,
             database_pool,
             session_configuration,
-            tls_server_configuration
+            tls_server_configuration,
+            ui_icon_filetype
         };
 
         Ok(config)
@@ -175,11 +190,13 @@ pub struct TuskConfiguration {
     tera: Arc<RwLock<Tera>>,
     www_domain: String,
     api_domain: String,
+    tera_templates: String,
     static_files: String,
     user_directories: String,
     database_pool: Arc<Pool<ConnectionManager<PgConnection>>>,
     session_configuration: SessionConfiguration,
-    tls_server_configuration: rustls::ServerConfig
+    tls_server_configuration: rustls::ServerConfig,
+    ui_icon_filetype: String
 }
 impl TuskConfiguration {
     /// Returns a configuration wrapped in `actix_web::web::Data` to store into the web server.
@@ -194,6 +211,10 @@ impl TuskConfiguration {
     pub fn api_domain(&self) -> &str {
         &self.api_domain
     }
+    /// Returns the path from which the Tera templates are loaded.
+    pub fn tera_templates(&self) -> &str {
+        &self.tera_templates
+    }
     /// Returns the path from which to serve static files.
     pub fn static_files(&self) -> &str {
         &self.static_files
@@ -201,6 +222,10 @@ impl TuskConfiguration {
     /// Returns the path where user files are stored.
     pub fn user_directories(&self) -> &str {
         &self.user_directories
+    }
+    /// Returns the file extension for the UI icons.
+    pub fn ui_icon_filetype(&self) -> &str {
+        &self.ui_icon_filetype
     }
     /// Returns a connection to the database.
     pub fn database_connect(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
@@ -245,6 +270,7 @@ impl TuskConfiguration {
         context.insert("protocol", "https");
         context.insert("www_domain", &self.www_domain);
         context.insert("api_domain", &self.api_domain);
+        context.insert("ui_icon_filetype", &self.ui_icon_filetype);
 
         context
     }

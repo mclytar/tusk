@@ -29,6 +29,23 @@ impl<'a> RoleAssign<'a> {
             Ok(())
         })
     }
+    /// Removes the role from the specified user.
+    pub fn cancel_from<S: AsRef<str>>(self, username: S) -> Result<()> {
+        use crate::schema::user_role;
+        let username = username.as_ref();
+
+        self.db_connection.transaction(|db_connection| {
+            let role = Role::read_by_name(db_connection, self.name)?;
+            let user = crate::resources::User::read_by_username(db_connection, username)?;
+
+            diesel::delete(user_role::table)
+                .filter(user_role::user_id.eq(user.id()))
+                .filter(user_role::role_id.eq(role.id()))
+                .execute(db_connection)?;
+
+            Ok(())
+        })
+    }
 }
 
 #[derive(Clone, Debug, Queryable, Selectable, Serialize, Deserialize)]
@@ -112,7 +129,7 @@ impl Role {
         &self.display
     }
     /// Returns a partially built query to assign the specified role to an user.
-    pub fn assign<'a, S: AsRef<str>>(db_connection: &'a mut PgConnection, name: S) -> RoleAssign<'a> {
+    pub fn assign<S: AsRef<str>>(db_connection: &mut PgConnection, name: S) -> RoleAssign {
         RoleAssign { name: name.as_ref().to_owned(), db_connection }
     }
     /// Deletes a role given the user ID.

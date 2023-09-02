@@ -7,7 +7,7 @@ use tusk_core::error::Result;
 
 /// Runs the server.
 pub fn run() -> Result<()> {
-    let (server, _) = crate::server_spawn()?;
+    let (server, tusk) = crate::server_spawn()?;
 
     daemon::notify(false, [(daemon::STATE_READY, "1")].iter())?;
 
@@ -20,6 +20,8 @@ pub fn run() -> Result<()> {
         Some(user) => nix::unistd::setuid(user.uid),
         None => Err(nix::Error::last())
     }?;
+
+    let _w = super::spawn_watcher(tusk);
 
     crate::server_run(server)?;
     Ok(())

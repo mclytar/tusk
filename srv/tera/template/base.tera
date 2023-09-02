@@ -1,0 +1,33 @@
+{% import "template/macro.tera" as tusk %}
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    {% block head %}
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Home server</title>
+        <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+        <link rel="stylesheet" href="/static/style/style.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" />
+        <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.21.2/dist/bootstrap-table.min.css" />
+
+        <script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.js"></script>
+        <script src="https://unpkg.com/bootstrap-table@1.21.2/dist/bootstrap-table.js"></script>
+        <script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1/dist/es-module-shims.min.js" crossorigin="anonymous"></script>
+        <script type="importmap">
+        {
+            "imports": {
+                "@popperjs/core": "https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/esm/popper.min.js",
+                "bootstrap": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.esm.min.js",
+                "http2": "/static/http2.js"
+            }
+        }
+        </script>
+        <script type="module" src="/static/js/http.js"></script>
+    {% endblock %}
+</head>
+<body class="app">
+    {% block body %}{% endblock %}
+</body>
+</html>
