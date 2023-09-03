@@ -13,12 +13,12 @@ pub struct RoleAssign<'a> {
 }
 impl<'a> RoleAssign<'a> {
     /// Assigns the role to the specified user.
-    pub fn to<S: AsRef<str>>(self, username: S) -> Result<()> {
+    pub fn to<S: AsRef<str>>(&mut self, username: S) -> Result<()> {
         use crate::schema::user_role;
         let username = username.as_ref();
 
         self.db_connection.transaction(|db_connection| {
-            let role = Role::read_by_name(db_connection, self.name)?;
+            let role = Role::read_by_name(db_connection, &self.name)?;
             let user = crate::resources::User::read_by_username(db_connection, username)?;
 
             diesel::insert_into(user_role::table)
@@ -30,12 +30,12 @@ impl<'a> RoleAssign<'a> {
         })
     }
     /// Removes the role from the specified user.
-    pub fn cancel_from<S: AsRef<str>>(self, username: S) -> Result<()> {
+    pub fn cancel_from<S: AsRef<str>>(&mut self, username: S) -> Result<()> {
         use crate::schema::user_role;
         let username = username.as_ref();
 
         self.db_connection.transaction(|db_connection| {
-            let role = Role::read_by_name(db_connection, self.name)?;
+            let role = Role::read_by_name(db_connection, &self.name)?;
             let user = crate::resources::User::read_by_username(db_connection, username)?;
 
             diesel::delete(user_role::table)
@@ -116,22 +116,6 @@ impl Role {
 
         Ok(roles)
     }
-    /// Returns the ID of the current role.
-    pub fn id(&self) -> Uuid {
-        self.role_id
-    }
-    /// Returns the name of the current role.
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-    /// Returns the display name of the current role.
-    pub fn display(&self) -> &str {
-        &self.display
-    }
-    /// Returns a partially built query to assign the specified role to an user.
-    pub fn assign<S: AsRef<str>>(db_connection: &mut PgConnection, name: S) -> RoleAssign {
-        RoleAssign { name: name.as_ref().to_owned(), db_connection }
-    }
     /// Deletes a role given the user ID.
     pub fn delete_by_id(db_connection: &mut PgConnection, role_id: Uuid) -> Result<usize> {
         use crate::schema::role;
@@ -157,5 +141,21 @@ impl Role {
             .execute(db_connection)?;
 
         Ok(num_deleted)
+    }
+    /// Returns the ID of the current role.
+    pub fn id(&self) -> Uuid {
+        self.role_id
+    }
+    /// Returns the name of the current role.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    /// Returns the display name of the current role.
+    pub fn display(&self) -> &str {
+        &self.display
+    }
+    /// Returns a partially built query to assign the specified role to an user.
+    pub fn assign<S: AsRef<str>>(db_connection: &mut PgConnection, name: S) -> RoleAssign {
+        RoleAssign { name: name.as_ref().to_owned(), db_connection }
     }
 }

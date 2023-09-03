@@ -42,6 +42,7 @@ pub fn server_spawn() -> Result<(actix_web::dev::Server, TuskData)> {
     log::info!("Connected to Redis ");
 
     tusk.apply_migrations()?;
+    tusk.check_user_directories()?;
     let config = tusk.tls_config();
 
     let data = tusk.to_data();
@@ -72,8 +73,9 @@ async fn server_run(server: actix_web::dev::Server) -> std::io::Result<()> {
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use log::LevelFilter;
+    use tusk_core::config::TEST_CONFIGURATION;
 
     pub fn init() {
         let _ = env_logger::builder()

@@ -6,8 +6,6 @@ use std::io::{BufReader, ErrorKind};
 use std::path::PathBuf;
 use std::sync::{Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-#[allow(unused)] use log::{error, warn, info, debug, trace};
-
 use actix_web::web;
 use diesel::{r2d2::{ConnectionManager, Pool, PooledConnection}, PgConnection};
 use diesel_migrations::{embed_migrations, MigrationHarness};
@@ -21,9 +19,11 @@ pub type TuskData = web::Data<TuskConfiguration>;
 
 /// Returns a TLS server configuration.
 pub fn spawn_tls_configuration() -> Result<rustls::ServerConfig> {
-    #[cfg(windows)]
+    #[cfg(test)]
+        let file = File::open("cert.pem")?;
+    #[cfg(all(windows, not(test)))]
         let file = File::open("C:\\ProgramData\\Tusk\\tusk.crt")?;
-    #[cfg(unix)]
+    #[cfg(all(unix, not(test)))]
         let file = File::open("/etc/tusk/domains/server-dev.local/cert.pem")?;
     let mut reader = BufReader::new(file);
     let certs: Vec<_> = rustls_pemfile::certs(&mut reader)?
@@ -31,11 +31,13 @@ pub fn spawn_tls_configuration() -> Result<rustls::ServerConfig> {
         .map(rustls::Certificate)
         .collect();
 
-    info!("Found {} certificates.", certs.len());
+    log::info!("Found {} certificates.", certs.len());
 
-    #[cfg(windows)]
+    #[cfg(test)]
+        let file = File::open("key.pem")?;
+    #[cfg(all(windows, not(test)))]
         let file = File::open("C:\\ProgramData\\Tusk\\tusk.key")?;
-    #[cfg(unix)]
+    #[cfg(all(unix, not(test)))]
         let file = File::open("/etc/tusk/domains/server-dev.local/key.pem")?;
     let mut reader = BufReader::new(file);
     let keys: Vec<_> = rustls_pemfile::pkcs8_private_keys(&mut reader)?
@@ -43,13 +45,13 @@ pub fn spawn_tls_configuration() -> Result<rustls::ServerConfig> {
         .map(rustls::PrivateKey)
         .collect();
 
-    info!("Found {} keys, using the first one available.", keys.len());
+    log::info!("Found {} keys, using the first one available.", keys.len());
 
     let key = keys.into_iter()
         .next()
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No key in file 'tusk.key'."))?;
 
-    info!("Key file loaded");
+    log::info!("Key file loaded");
 
     let config = rustls::ServerConfig::builder()
         .with_safe_defaults()
@@ -98,7 +100,13 @@ impl TuskConfigurationFile {
     /// if this fails, falls back to importing `/etc/tusk/tusk.toml`.
     pub fn import() -> Result<TuskConfigurationFile> {
         log::info!("Executing from {}.", PathBuf::from(".").canonicalize()?.display());
-        let data = match std::fs::read_to_string("./tusk.toml") {
+
+        #[cfg(not(test))]
+        let first_path = "./tusk.toml";
+        #[cfg(test)]
+        let first_path = "../tusk.toml";
+
+        let data = match std::fs::read_to_string(first_path) {
             Ok(data) => {
                 log::info!("Loaded configuration from tusk.toml.");
                 data
@@ -117,7 +125,10 @@ impl TuskConfigurationFile {
 
     /// Finalizes the configuration file and constructs a [`TuskConfiguration`] structure.
     pub fn into_tusk(self) -> Result<TuskConfiguration> {
+        #[allow(unused)]
         let TuskConfigurationSection { log_level, www_domain, api_domain, tera_templates, static_files, user_directories, ui_icon_filetype } = self.tusk;
+
+        #[cfg(not(test))]
         log::set_max_level(log_level);
 
         let mut tera_path = PathBuf::from(&tera_templates);
@@ -125,7 +136,7 @@ impl TuskConfigurationFile {
         tera_path.push("*.tera");
         let tera = Tera::new(tera_path.to_string_lossy().as_ref())?;
         for template in tera.get_template_names() {
-            info!("Loaded Tera template {template}");
+            log::info!("Loaded Tera template {template}");
         }
 
         let tera = Arc::new(RwLock::new(tera));
@@ -145,18 +156,6 @@ impl TuskConfigurationFile {
         let connection_manager = ConnectionManager::new(self.diesel.url);
         let database_pool = Pool::new(connection_manager)?;
         let database_pool = Arc::new(database_pool);
-
-        let mut db_connection = database_pool.get()?;
-        let directory_users = crate::resources::User::read_by_role_name(&mut db_connection, "directory")?;
-        let directory_path = PathBuf::from(&user_directories);
-        log::info!("Checking directories in `{}`", directory_path.display());
-        for dir_user in directory_users {
-            let mut user_dir_path = directory_path.clone();
-            user_dir_path.push(dir_user.username());
-            if !user_dir_path.exists() {
-                log::warn!("Missing directory for user `{}`", dir_user.username());
-            }
-        }
 
         let tls_server_configuration = spawn_tls_configuration()?;
 
@@ -243,14 +242,14 @@ impl TuskConfiguration {
             .len();
 
         if pending_migrations_count > 0 {
-            info!("Found {pending_migrations_count} migration(s)");
+            log::info!("Found {pending_migrations_count} migration(s)");
 
             db_connection.run_pending_migrations(MIGRATIONS)
                 .map_err(Error::from_migration_error)?;
 
-            info!("Applied {pending_migrations_count} migration(s)");
+            log::info!("Applied {pending_migrations_count} migration(s)");
         } else {
-            info!("No pending migrations found")
+            log::info!("No pending migrations found")
         }
 
         Ok(())
@@ -291,5 +290,117 @@ impl TuskConfiguration {
     /// Returns the current TLS configuration.
     pub fn tls_config(&self) -> rustls::ServerConfig {
         self.tls_server_configuration.clone()
+    }
+    /// Checks whether all the users with role `directory` actually have a directory, and logs
+    /// a warning in case not.
+    pub fn check_user_directories(&self) -> Result<usize> {
+        let mut db_connection = self.database_connect()?;
+        let mut count = 0;
+
+        let directory_users = crate::resources::User::read_by_role_name(&mut db_connection, "directory")?;
+        let directory_path = PathBuf::from(&self.user_directories);
+
+        log::info!("Checking directories in `{}`", directory_path.display());
+        for dir_user in directory_users {
+            let mut user_dir_path = directory_path.clone();
+            user_dir_path.push(dir_user.username());
+            if !user_dir_path.exists() {
+                count += 1;
+                log::warn!("Missing directory for user `{}`", dir_user.username());
+            }
+        }
+
+        Ok(count)
+    }
+}
+
+#[cfg(any(feature = "test_utils", test))]
+pub static TEST_CONFIGURATION: once_cell::sync::Lazy<TuskConfiguration> = once_cell::sync::Lazy::new(|| {
+    use diesel::{Connection};
+    use log::LevelFilter;
+    use secrecy::Secret;
+
+    use crate::resources::{Role, User};
+
+    let _ = env_logger::builder()
+        .filter_level(LevelFilter::Info)
+        .is_test(true)
+        .try_init();
+
+    let mut configuration_file = TuskConfigurationFile::import()
+        .expect("configuration_file");
+
+    configuration_file.diesel.url += "_test";
+
+    log::info!("Emptying test database");
+
+    const MIGRATIONS: diesel_migrations::EmbeddedMigrations = embed_migrations!("../migrations");
+
+    let mut db_connection = PgConnection::establish(configuration_file.diesel.url.as_ref())
+        .expect("database connection");
+
+    db_connection.revert_all_migrations(MIGRATIONS).expect("all migrations reverted");
+
+    let config = configuration_file.clone()
+        .into_tusk()
+        .expect("configuration");
+
+    config.apply_migrations().expect("database migration");
+
+    let mut db_connection = config.database_connect()
+        .expect("database connection");
+
+    User::create(&mut db_connection, "test", Secret::new(String::from("test"))).expect("database connection");
+    User::create(&mut db_connection, "dummy", Secret::new(String::from("dummy"))).expect("database connection");
+    User::create(&mut db_connection, "admin", Secret::new(String::from("admin"))).expect("database connection");
+    User::create(&mut db_connection, "user", Secret::new(String::from("user"))).expect("database connection");
+
+    Role::assign(&mut db_connection, "admin").to("admin").expect("role assignment");
+
+    let mut directory_role_assign = Role::assign(&mut db_connection, "directory");
+    directory_role_assign.to("admin").expect("role assignment");
+    directory_role_assign.to("test").expect("role assignment");
+    directory_role_assign.to("user").expect("role assignment");
+
+    let mut user_role_assign = Role::assign(&mut db_connection, "user");
+    user_role_assign.to("admin").expect("role assignment");
+    user_role_assign.to("test").expect("role assignment");
+    user_role_assign.to("user").expect("role assignment");
+    user_role_assign.to("dummy").expect("role assignment");
+
+    config
+});
+
+#[cfg(test)]
+pub mod test {
+    use std::path::PathBuf;
+    use super::TEST_CONFIGURATION;
+
+    #[test]
+    fn configuration_loaded_correctly() {
+        let _config = &*super::TEST_CONFIGURATION;
+    }
+
+    #[test]
+    fn tera_context_creation() {
+        let context = TEST_CONFIGURATION.tera_context();
+
+        assert_eq!(context.get("protocol").unwrap(), "https");
+        assert_eq!(context.get("www_domain").unwrap(), &TEST_CONFIGURATION.www_domain);
+        assert_eq!(context.get("api_domain").unwrap(), &TEST_CONFIGURATION.api_domain);
+        assert_eq!(context.get("ui_icon_filetype").unwrap(), &TEST_CONFIGURATION.ui_icon_filetype);
+    }
+
+    #[test]
+    fn directory_users_missing_directory() {
+        let users_without_directory = TEST_CONFIGURATION.check_user_directories()
+            .expect("user directory testing");
+
+        let path = PathBuf::from(TEST_CONFIGURATION.user_directories())
+            .canonicalize()
+            .expect("canonicalized path");
+        log::info!("Loading directories from `{}`", path.display());
+
+        assert_eq!(users_without_directory, 1);
     }
 }

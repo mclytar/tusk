@@ -12,7 +12,11 @@ CREATE TABLE "user_role" (
                         user_role_id                UUID                            PRIMARY KEY DEFAULT uuid_generate_v4(),
                         user_id                     UUID                            NOT NULL,
                         role_id                     UUID                            NOT NULL,
-                        FOREIGN KEY (user_id) REFERENCES "user"(user_id),
-                        FOREIGN KEY (role_id) REFERENCES "role"(role_id),
+                        FOREIGN KEY (user_id) REFERENCES "user"(user_id)
+                            ON UPDATE CASCADE
+                            ON DELETE CASCADE,
+                        FOREIGN KEY (role_id) REFERENCES "role"(role_id)
+                            ON UPDATE CASCADE
+                            ON DELETE CASCADE,
                         UNIQUE (user_id, role_id)
 );

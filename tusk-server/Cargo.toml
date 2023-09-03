@@ -25,6 +25,10 @@ toml = "0.7"
 tusk-derive = { path = "../tusk-derive" }
 tusk-core = { path = "../tusk-core" }
 
+[dev-dependencies]
+tusk-core = { path = "../tusk-core", features = ["test_utils"] }
+once_cell = "1.18"
+
 [target.'cfg(unix)'.dependencies]
 nix = "0.26"
 systemd = "0.10"
