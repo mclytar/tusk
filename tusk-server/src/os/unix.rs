@@ -1,5 +1,6 @@
 //! Defines the necessary functions to make the server run as a Unix daemon.
 
+use log::LevelFilter;
 use systemd::daemon;
 use systemd_journal_logger::JournalLog;
 
@@ -9,6 +10,7 @@ use tusk_core::error::TuskResult;
 pub fn run() -> TuskResult<()> {
     JournalLog::default().install()
         .expect("a functioning logger");
+    log::set_max_level(LevelFilter::Info);
 
     let (server, tusk) = crate::server_spawn()?;
 
