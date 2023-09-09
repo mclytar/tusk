@@ -17,7 +17,7 @@ echo "Installing new version..."
 cp /home/mclytar/deploy/tusk/target/debug/tusk /usr/bin/
 cp /home/mclytar/deploy/tusk/target/debug/tusk-server /usr/bin/
 
-cp -r /home/mclytar/deploy/tusk/_srv/* /srv/
+cp -r /home/mclytar/deploy/tusk/srv/* /srv/
 
 tusk install
 tusk start
