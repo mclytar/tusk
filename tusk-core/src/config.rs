@@ -117,7 +117,7 @@ impl TuskConfigurationFile {
     pub fn import_from_default_locations() -> TuskResult<TuskConfigurationFile> {
         #[cfg(windows)]
         let config_file = Self::import_from_locations([".\\tusk.toml", "C:\\ProgramData\\Tusk\\tusk.toml"])?;
-        #[cfg(linux)]
+        #[cfg(unix)]
         let config_file = Self::import_from_locations(["./tusk.toml", "/etc/tusk/tusk.toml"])?;
 
         Ok(config_file)
