@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 use secrecy::Secret;
 
 use tusk_core::config::TuskConfigurationFile;
-use tusk_core::error::Result;
+use tusk_core::error::TuskResult;
 
 /// User management.
 ///
@@ -39,7 +39,7 @@ pub enum UserCommand {
 }
 
 /// Main entry point for the `user` command.
-pub fn main(args: User) -> Result<()> {
+pub fn main(args: User) -> TuskResult<()> {
     match args.command {
         UserCommand::Add { username } => add(username),
         UserCommand::List => list(),
@@ -48,7 +48,7 @@ pub fn main(args: User) -> Result<()> {
 }
 
 /// Adds a new user in the database.
-pub fn add(username: Option<String>) -> Result<()> {
+pub fn add(username: Option<String>) -> TuskResult<()> {
     let username = if let Some(username) = username {
         username
     } else {
@@ -62,7 +62,7 @@ pub fn add(username: Option<String>) -> Result<()> {
         .interact()?;
     let password = Secret::new(password);
 
-    let tusk = TuskConfigurationFile::import()?
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
 
     let mut db_connection = tusk.database_connect()?;
@@ -75,8 +75,8 @@ pub fn add(username: Option<String>) -> Result<()> {
     Ok(())
 }
 /// Lists all the users.
-pub fn list() -> Result<()> {
-    let tusk = TuskConfigurationFile::import()?
+pub fn list() -> TuskResult<()> {
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
 
     let mut db_connection = tusk.database_connect()?;
@@ -107,7 +107,7 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 /// Removes an user from the database.
-pub fn remove(username: Option<String>) -> Result<()> {
+pub fn remove(username: Option<String>) -> TuskResult<()> {
     let username = if let Some(username) = username {
         username
     } else {
@@ -116,7 +116,7 @@ pub fn remove(username: Option<String>) -> Result<()> {
             .interact()?
     };
 
-    let tusk = TuskConfigurationFile::import()?
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
 
     let mut db_connection = tusk.database_connect()?;

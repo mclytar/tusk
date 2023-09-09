@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 use tusk_core::config::TuskConfigurationFile;
-use tusk_core::error::Result;
+use tusk_core::error::TuskResult;
 
 /// User management.
 ///
@@ -58,7 +58,7 @@ pub enum RoleCommand {
 }
 
 /// Main entry point for the `role` command.
-pub fn main(args: Role) -> Result<()> {
+pub fn main(args: Role) -> TuskResult<()> {
     match args.command {
         RoleCommand::Add { name, display } => add(name, display),
         RoleCommand::Assign { role, username } => assign(role, username),
@@ -69,7 +69,7 @@ pub fn main(args: Role) -> Result<()> {
 }
 
 /// Adds a new role in the database.
-pub fn add(name: Option<String>, display: Option<String>) -> Result<()> {
+pub fn add(name: Option<String>, display: Option<String>) -> TuskResult<()> {
     let name = if let Some(name) = name {
         name
     } else {
@@ -83,7 +83,7 @@ pub fn add(name: Option<String>, display: Option<String>) -> Result<()> {
         name.clone()
     };
 
-    let tusk = TuskConfigurationFile::import()?
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
 
     let mut db_connection = tusk.database_connect()?;
@@ -96,8 +96,8 @@ pub fn add(name: Option<String>, display: Option<String>) -> Result<()> {
     Ok(())
 }
 /// Assigns a role to an user.
-pub fn assign(role: String, username: String) -> Result<()> {
-    let tusk = TuskConfigurationFile::import()?
+pub fn assign(role: String, username: String) -> TuskResult<()> {
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
 
     let mut db_connection = tusk.database_connect()?;
@@ -108,7 +108,7 @@ pub fn assign(role: String, username: String) -> Result<()> {
     let mut user_dir_path = PathBuf::from(tusk.user_directories());
     user_dir_path.push(&username);
 
-    if &role == "directory" && !user_dir_path.exists() {
+    if &role == "storage" && !user_dir_path.exists() {
         println!("Warning: path `{}` does not exist.", user_dir_path.display());
     }
 
@@ -117,8 +117,8 @@ pub fn assign(role: String, username: String) -> Result<()> {
     Ok(())
 }
 /// Cancels a role assignation to an user.
-pub fn cancel(role: String, username: String) -> Result<()> {
-    let tusk = TuskConfigurationFile::import()?
+pub fn cancel(role: String, username: String) -> TuskResult<()> {
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
 
     let mut db_connection = tusk.database_connect()?;
@@ -131,8 +131,8 @@ pub fn cancel(role: String, username: String) -> Result<()> {
     Ok(())
 }
 /// Lists all the roles.
-pub fn list() -> Result<()> {
-    let tusk = TuskConfigurationFile::import()?
+pub fn list() -> TuskResult<()> {
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
 
     let mut db_connection = tusk.database_connect()?;
@@ -160,7 +160,7 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 /// Removes an user from the database.
-pub fn remove(name: Option<String>) -> Result<()> {
+pub fn remove(name: Option<String>) -> TuskResult<()> {
     let name = if let Some(name) = name {
         name
     } else {
@@ -169,7 +169,7 @@ pub fn remove(name: Option<String>) -> Result<()> {
             .interact()?
     };
 
-    let tusk = TuskConfigurationFile::import()?
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
 
     let mut db_connection = tusk.database_connect()?;

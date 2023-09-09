@@ -7,7 +7,7 @@ use actix_web::body::BoxBody;
 use actix_web::http::header::{HeaderMap, TryIntoHeaderPair};
 use actix_web::http::StatusCode;
 use tusk_core::DieselError;
-use tusk_core::error::Error as TuskError;
+use tusk_core::error::TuskError as TuskError;
 
 /// Wraps the structure in one of the `Result` variants.
 pub trait WrapResult: Sized {
@@ -561,8 +561,8 @@ impl From<StatusCode> for HttpError {
         }
     }
 }
-impl From<tusk_core::error::Error> for HttpError {
-    fn from(value: tusk_core::error::Error) -> Self {
+impl From<tusk_core::error::TuskError> for HttpError {
+    fn from(value: tusk_core::error::TuskError) -> Self {
         let status_code = match value {
             TuskError::DatabaseQueryError(DieselError::NotFound) => StatusCode::NOT_FOUND,
             TuskError::IOError(e) if e.kind() == std::io::ErrorKind::AlreadyExists => StatusCode::CONFLICT,

@@ -84,5 +84,80 @@ pub fn configure(cfg: &mut ServiceConfig, tusk: &TuskConfiguration) {
 
 #[cfg(test)]
 mod test {
-    // TODO: Add tests for GUIResource.
+    use actix_web::test::TestRequest;
+    use actix_web::{FromRequest, ResponseError, web};
+    use actix_web::body::MessageBody;
+    use actix_web::http::StatusCode;
+    use tusk_core::config::TEST_CONFIGURATION;
+    use crate::api::session::test::{create_empty_session, create_session_for_user};
+    use crate::gui::GUIResource;
+
+    #[actix_web::test]
+    async fn index_loaded_correctly() {
+        let tusk = TEST_CONFIGURATION.to_data();
+        let req = TestRequest::get()
+            .param("path", "")
+            .to_http_request();
+        let session = create_session_for_user("user").await;
+
+        let path = web::Path::extract(&req).await.expect("A valid path");
+        let resp = GUIResource::get(session, tusk, path).await
+            .expect("OK");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body()
+            .try_into_bytes()
+            .expect("Cannot extract body");
+        let body = String::from_utf8(body.to_vec())
+            .expect("Valid UTF-8");
+        assert_eq!(&body, "<html lang=\"en\">\r\n<head><title>Test</title></head>\r\n<body>Index</body>\r\n</html>");
+    }
+
+    #[actix_web::test]
+    async fn web_page_loaded_correctly() {
+        let tusk = TEST_CONFIGURATION.to_data();
+        let req = TestRequest::get()
+            .param("path", "page")
+            .to_http_request();
+        let session = create_session_for_user("user").await;
+
+        let path = web::Path::extract(&req).await.expect("A valid path");
+        let resp = GUIResource::get(session, tusk, path).await
+            .expect("OK");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body()
+            .try_into_bytes()
+            .expect("Cannot extract body");
+        let body = String::from_utf8(body.to_vec())
+            .expect("Valid UTF-8");
+        assert_eq!(&body, "<html lang=\"en\">\r\n<head><title>Test</title></head>\r\n<body>Hello, Body</body>\r\n</html>");
+    }
+
+    #[actix_web::test]
+    async fn unauthorized_user_redirected_to_login() {
+        let tusk = TEST_CONFIGURATION.to_data();
+        let req = TestRequest::get()
+            .param("path", "")
+            .to_http_request();
+        let session = create_empty_session().await;
+
+        let path = web::Path::extract(&req).await.expect("A valid path");
+        let resp = GUIResource::get(session, tusk, path).await
+            .expect("FOUND");
+        assert_eq!(resp.status(), StatusCode::FOUND);
+        assert_eq!(resp.headers().get("Location").expect("Location header"), "/login");
+    }
+
+    #[actix_web::test]
+    async fn serving_not_found_upon_non_existent_page() {
+        let tusk = TEST_CONFIGURATION.to_data();
+        let req = TestRequest::get()
+            .param("path", "this_page_does_not_exist")
+            .to_http_request();
+        let session = create_session_for_user("user").await;
+
+        let path = web::Path::extract(&req).await.expect("A valid path");
+        let resp = GUIResource::get(session, tusk, path).await
+            .expect_err("NOT FOUND");
+        assert_eq!(resp.status_code(), StatusCode::NOT_FOUND);
+    }
 }

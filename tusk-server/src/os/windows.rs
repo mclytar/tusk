@@ -15,7 +15,7 @@ use windows_service::{
     service_dispatcher,
 };
 
-use tusk_core::error::Result;
+use tusk_core::error::TuskResult;
 
 const SERVICE_NAME: &str = "tusk-server";
 const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
@@ -23,7 +23,7 @@ const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
 define_windows_service!(ffi_service_main, tusk_server_main);
 
 /// Runs the server.
-pub fn run() -> Result<()> {
+pub fn run() -> TuskResult<()> {
     let mut run_cli = false;
     let mut args = std::env::args();
     while let Some(arg) = args.next() {
@@ -56,7 +56,7 @@ pub fn tusk_server_main(_arguments: Vec<OsString>) {
 }
 
 /// Runs the main server as a Windows Service.
-pub fn run_service() -> Result<()> {
+pub fn run_service() -> TuskResult<()> {
     let (server, tusk) = crate::server_spawn()?;
     let handle = server.handle();
 

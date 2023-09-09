@@ -1,13 +1,13 @@
 import { Collapse, Modal } from 'bootstrap';
-import { HTTP } from '../../http/static/http.js';
-import { Icon } from '../../http/static/themes';
+import { HTTP } from '../../tera/static/tera.js';
+import { Icon } from '../../tera/static/themes';
 /**
  * Kind of file descriptor.
  */
 var DescriptorKind;
 (function (DescriptorKind) {
     DescriptorKind["File"] = "file";
-    DescriptorKind["Directory"] = "directory";
+    DescriptorKind["Directory"] = "storage";
     DescriptorKind["None"] = "none";
 })(DescriptorKind || (DescriptorKind = {}));
 let waiter = null;
@@ -132,11 +132,11 @@ class History {
  */
 class FileExplorer {
     /**
-     * HTML element showing the directory tree.
+     * HTML element showing the storage tree.
      */
     element_DirectoryTree;
     /**
-     * HTML element showing the files in the current directory.
+     * HTML element showing the files in the current storage.
      */
     element_FileExplorer;
     /**
@@ -175,9 +175,9 @@ class FileExplorer {
             .then(this.on_load.bind(this));
     }
     /**
-     * Creates a new HTMLElement representing an item in the directory tree.
+     * Creates a new HTMLElement representing an item in the storage tree.
      *
-     * @param directory Descriptor of the directory.
+     * @param directory Descriptor of the storage.
      */
     create_directory_tree_item(directory) {
         let new_element_header_expand = document.createElement("i");
@@ -252,9 +252,9 @@ class FileExplorer {
         return new_element;
     }
     /**
-     * Navigates to a new directory, updating the HTML element.
+     * Navigates to a new storage, updating the HTML element.
      *
-     * @param path Path of the directory.
+     * @param path Path of the storage.
      */
     navigate_to(path) {
         this.history.visit(new PathHistoryItem(this.user, path));
@@ -269,9 +269,9 @@ class FileExplorer {
             .then(this.on_file_viewer_path_changed.bind(this));
     }
     /**
-     * Returns the path of a directory tree item.
+     * Returns the path of a storage tree item.
      *
-     * @param element Element in the directory tree of which retrieve the path.
+     * @param element Element in the storage tree of which retrieve the path.
      */
     read_directory_tree_element_path(element) {
         let path = "";
@@ -290,10 +290,10 @@ class FileExplorer {
         return path;
     }
     /**
-     * Finds the HTML element relative to the directory tree item of a given path.
+     * Finds the HTML element relative to the storage tree item of a given path.
      * Notice that this element is of type UL if the path is "/" and of type LI otherwise.
      *
-     * @param path Path to look for in the directory tree.
+     * @param path Path to look for in the storage tree.
      */
     seek_directory_tree_item(path) {
         let element = this.element_DirectoryTree;
@@ -342,7 +342,7 @@ class FileExplorer {
             .then(this.update_navigation_buttons.bind(this));
     }
     /**
-     * Updates the navigation buttons depending on the state of the history and the current directory.
+     * Updates the navigation buttons depending on the state of the history and the current storage.
      */
     update_navigation_buttons() {
         let undo_button = document.querySelector("#FileExplorerButton_Undo");
@@ -353,7 +353,7 @@ class FileExplorer {
         parent_button.disabled = this.path === "/" || this.path === "";
     }
     /**
-     * Loads and shows the root directory for the current user.
+     * Loads and shows the root storage for the current user.
      */
     async load_root() {
         let response = await HTTP.GET(`/v1/directory/${this.user}/`)
@@ -361,7 +361,7 @@ class FileExplorer {
         this.element_DirectoryTree.innerHTML = "";
         this.element_FileExplorer.innerHTML = "";
         for (let directory of response) {
-            if (directory.kind !== "directory")
+            if (directory.kind !== "storage")
                 continue;
             let new_directory_tree_element = this.create_directory_tree_item(directory);
             let new_file_viewer_element = this.create_file_viewer_item(directory);
@@ -377,7 +377,7 @@ class FileExplorer {
         this.view = response;
     }
     /**
-     * Loads and shows all the child elements of a directory tree item.
+     * Loads and shows all the child elements of a storage tree item.
      *
      * @param element HTML element of which load the child elements.
      */
@@ -453,7 +453,7 @@ class FileExplorer {
         file_explorer.navigate_to(path);
     }
     /**
-     * Event triggered by clicking on the expand/collapse button in the directory tree viewer.
+     * Event triggered by clicking on the expand/collapse button in the storage tree viewer.
      */
     on_directory_tree_item_collapse() {
         let sender = this;
@@ -487,7 +487,7 @@ class FileExplorer {
         return false;
     }
     /**
-     * Event triggered by double-clicking an item in the directory tree viewer.
+     * Event triggered by double-clicking an item in the storage tree viewer.
      */
     on_directory_tree_item_dblclick() {
         let sender = this;
@@ -773,4 +773,4 @@ JQ(() => {
     document["window_NewFolder"] = new Modal("#Window_NewFolder");
     document["file_readers"] = [];
 });
-//# sourceMappingURL=directory.js.map
+//# sourceMappingURL=storage.js.map

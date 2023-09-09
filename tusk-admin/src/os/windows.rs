@@ -10,10 +10,10 @@ use windows_service::{
 };
 use windows_service::service::ServiceState;
 
-use tusk_core::error::Result;
+use tusk_core::error::TuskResult;
 
 /// Installs the server as a Windows service.
-pub fn service_install() -> Result<()> {
+pub fn service_install() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -57,7 +57,7 @@ pub fn service_install() -> Result<()> {
     Ok(())
 }
 /// Uninstalls the server as a Windows service.
-pub fn service_uninstall() -> Result<()> {
+pub fn service_uninstall() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -102,7 +102,7 @@ pub fn service_uninstall() -> Result<()> {
     Ok(())
 }
 /// Starts the server as a Windows service.
-pub fn service_start() -> Result<()> {
+pub fn service_start() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -133,7 +133,7 @@ pub fn service_start() -> Result<()> {
     Ok(())
 }
 /// Stops the server as a Windows service.
-pub fn service_stop() -> Result<()> {
+pub fn service_stop() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -164,7 +164,7 @@ pub fn service_stop() -> Result<()> {
     Ok(())
 }
 /// Reloads the server and its configuration.
-pub fn service_reload() -> Result<()> {
+pub fn service_reload() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -184,9 +184,9 @@ pub fn service_reload() -> Result<()> {
     Ok(())
 }
 /// Prints an error.
-pub fn print_error(e: tusk_core::error::Error) {
+pub fn print_error(e: tusk_core::error::TuskError) {
     match e {
-        tusk_core::error::Error::WindowsServiceError(ServiceError::Winapi(e)) => println!("Cannot perform operation: {e}"),
+        tusk_core::error::TuskError::WindowsServiceError(ServiceError::Winapi(e)) => println!("Cannot perform operation: {e}"),
         _ => println!("Cannot perform operation: {e}")
     }
 }

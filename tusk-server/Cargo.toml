@@ -19,6 +19,7 @@ rustls-pemfile = "1"
 secrecy = { version = "0.8.0", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 simple_logger = "4"
+tempfile = "3.7"
 tera = "1"
 tokio = "1"
 toml = "0.7"
@@ -28,6 +29,9 @@ tusk-core = { path = "../tusk-core" }
 [dev-dependencies]
 tusk-core = { path = "../tusk-core", features = ["test_utils"] }
 once_cell = "1.18"
+
+[features]
+test_utils = []
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.26"

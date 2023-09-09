@@ -19,7 +19,11 @@ Well, I still need to define some details about that).
 - [x] Add watch and self-reload for Unix.
 - [x] Add icon type on configuration file.
 - [x] Add `/settings` page, and allow users to change their password.
-- [ ] Check that everything is consistent and safe on the backend part.
+- [x] Check that everything is consistent and safe on the backend part.
+  - [x] Unit tests on `tusk-core`.
+  - [x] Benchmark tests on `tusk-core` (to check that fake password hashing is consistent with real password hashing).
+  - [x] ~~Unit tests on `tusk-admin`~~ (to be done, but not fundamental for now).
+  - [x] Unit tests on `tusk-server`.
 - [ ] **Done with the backend!**
 - [ ] Adjust icons handling.
 - [ ] Make sure that premium icons don't leak.

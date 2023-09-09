@@ -2,13 +2,17 @@
 
 use std::fmt::{Display, Formatter};
 
-/// A `Result` type with a preconfigured error of type [`tusk_core::error::Error`](crate::error::Error).
-pub type Result<T> = std::result::Result<T, Error>;
+/// A `Result` type with a preconfigured error of type [`tusk_core::error::Error`](crate::error::TuskError).
+pub type TuskResult<T> = std::result::Result<T, TuskError>;
 pub use diesel::result::Error as DieselQueryError;
 
 /// Defines the possible errors when starting the Tusk server.
 #[derive(Debug)]
-pub enum Error {
+pub enum TuskError {
+    /// None of the files given in the configuration list has been found.
+    ConfigurationNotFound,
+    /// The certificate file does not contain any certificate.
+    CertificatesNotFound,
     /// An error originated while reading from the configuration file.
     ConfigurationFileError(toml::de::Error),
     /// An error originated while trying to connect to the database.
@@ -32,102 +36,106 @@ pub enum Error {
     #[cfg(windows)]
     WindowsServiceError(windows_service::Error),
 }
-impl Error {
-    /// Creates an [`Error`] from a boxed migration error.
-    pub fn from_migration_error(e: Box<dyn std::error::Error + Send + Sync>) -> Error {
-        Error::MigrationError(e)
+impl TuskError {
+    /// Creates an [`TuskError`] from a boxed migration error.
+    pub fn from_migration_error(e: Box<dyn std::error::Error + Send + Sync>) -> TuskError {
+        TuskError::MigrationError(e)
     }
 }
-impl Display for Error {
+impl Display for TuskError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::ConfigurationFileError(e) => Display::fmt(e, f),
-            Error::DatabaseConnectionError(e) => Display::fmt(e, f),
-            Error::DatabaseQueryError(e) => Display::fmt(e, f),
-            Error::IOError(e) => Display::fmt(e, f),
-            Error::MigrationError(e) => Display::fmt(e, f),
-            Error::R2D2Error(e) => Display::fmt(e, f),
-            Error::RustlsError(e) => Display::fmt(e, f),
-            Error::TeraParseError(e) => Display::fmt(e, f),
+            TuskError::ConfigurationNotFound => write!(f, "None of the given configuration files has been found."),
+            TuskError::CertificatesNotFound => write!(f, "The certificate file does not contain any certificate."),
+            TuskError::ConfigurationFileError(e) => Display::fmt(e, f),
+            TuskError::DatabaseConnectionError(e) => Display::fmt(e, f),
+            TuskError::DatabaseQueryError(e) => Display::fmt(e, f),
+            TuskError::IOError(e) => Display::fmt(e, f),
+            TuskError::MigrationError(e) => Display::fmt(e, f),
+            TuskError::R2D2Error(e) => Display::fmt(e, f),
+            TuskError::RustlsError(e) => Display::fmt(e, f),
+            TuskError::TeraParseError(e) => Display::fmt(e, f),
             #[cfg(unix)]
-            Error::UnixError(e) => Display::fmt(e, f),
+            TuskError::UnixError(e) => Display::fmt(e, f),
             #[cfg(windows)]
-            Error::WindowsServiceError(e) => Display::fmt(e, f),
+            TuskError::WindowsServiceError(e) => Display::fmt(e, f),
         }
     }
 }
-impl std::error::Error for Error {
+impl std::error::Error for TuskError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Error::ConfigurationFileError(e) => Some(e),
-            Error::DatabaseConnectionError(e) => Some(e),
-            Error::DatabaseQueryError(e) => Some(e),
-            Error::IOError(e) => Some(e),
-            Error::MigrationError(e) => Some(e.as_ref()),
-            Error::R2D2Error(e) => Some(e),
-            Error::RustlsError(e) => Some(e),
-            Error::TeraParseError(e) => Some(e),
+            TuskError::ConfigurationNotFound => None,
+            TuskError::CertificatesNotFound => None,
+            TuskError::ConfigurationFileError(e) => Some(e),
+            TuskError::DatabaseConnectionError(e) => Some(e),
+            TuskError::DatabaseQueryError(e) => Some(e),
+            TuskError::IOError(e) => Some(e),
+            TuskError::MigrationError(e) => Some(e.as_ref()),
+            TuskError::R2D2Error(e) => Some(e),
+            TuskError::RustlsError(e) => Some(e),
+            TuskError::TeraParseError(e) => Some(e),
             #[cfg(unix)]
-            Error::UnixError(e) => Some(e),
+            TuskError::UnixError(e) => Some(e),
             #[cfg(windows)]
-            Error::WindowsServiceError(e) => Some(e),
+            TuskError::WindowsServiceError(e) => Some(e),
         }
     }
 }
 
-impl From<toml::de::Error> for Error {
+impl From<toml::de::Error> for TuskError {
     fn from(value: toml::de::Error) -> Self {
-        Error::ConfigurationFileError(value)
+        TuskError::ConfigurationFileError(value)
     }
 }
 
-impl From<diesel::prelude::ConnectionError> for Error {
+impl From<diesel::prelude::ConnectionError> for TuskError {
     fn from(value: diesel::prelude::ConnectionError) -> Self {
-        Error::DatabaseConnectionError(value)
+        TuskError::DatabaseConnectionError(value)
     }
 }
 
-impl From<diesel::result::Error> for Error {
+impl From<diesel::result::Error> for TuskError {
     fn from(value: diesel::result::Error) -> Self {
-        Error::DatabaseQueryError(value)
+        TuskError::DatabaseQueryError(value)
     }
 }
 
-impl From<std::io::Error> for Error {
+impl From<std::io::Error> for TuskError {
     fn from(value: std::io::Error) -> Self {
-        Error::IOError(value)
+        TuskError::IOError(value)
     }
 }
 
-impl From<r2d2::Error> for Error {
+impl From<r2d2::Error> for TuskError {
     fn from(value: r2d2::Error) -> Self {
-        Error::R2D2Error(value)
+        TuskError::R2D2Error(value)
     }
 }
 
-impl From<rustls::Error> for Error {
+impl From<rustls::Error> for TuskError {
     fn from(value: rustls::Error) -> Self {
-        Error::RustlsError(value)
+        TuskError::RustlsError(value)
     }
 }
 
-impl From<tera::Error> for Error {
+impl From<tera::Error> for TuskError {
     fn from(value: tera::Error) -> Self {
-        Error::TeraParseError(value)
+        TuskError::TeraParseError(value)
     }
 }
 
 #[cfg(unix)]
-impl From<nix::errno::Errno> for Error {
+impl From<nix::errno::Errno> for TuskError {
     fn from(value: nix::errno::Errno) -> Self {
-        Error::UnixError(value)
+        TuskError::UnixError(value)
     }
 }
 
 #[cfg(windows)]
-impl From<windows_service::Error> for Error {
+impl From<windows_service::Error> for TuskError {
     fn from(value: windows_service::Error) -> Self {
-        Error::WindowsServiceError(value)
+        TuskError::WindowsServiceError(value)
     }
 }
 

@@ -15,7 +15,7 @@ use actix_session::SessionMiddleware;
 use actix_web::{App, guard, HttpServer, web};
 use actix_web::middleware::Logger;
 
-use tusk_core::error::Result;
+use tusk_core::error::TuskResult;
 use tusk_core::config::{TuskConfigurationFile, TuskData};
 
 fn main() {
@@ -34,8 +34,8 @@ fn main() {
 /// The most common causes are:
 /// - The configuration file cannot be found, cannot be read, has an invalid format or has missing items.
 /// - TODO
-pub fn server_spawn() -> Result<(actix_web::dev::Server, TuskData)> {
-    let tusk = TuskConfigurationFile::import()?
+pub fn server_spawn() -> TuskResult<(actix_web::dev::Server, TuskData)> {
+    let tusk = TuskConfigurationFile::import_from_default_locations()?
         .into_tusk()?;
     log::info!("Configuration loaded");
     let redis_store = actix_web::rt::System::new().block_on(tusk.redis_store());
@@ -70,17 +70,4 @@ pub fn server_spawn() -> Result<(actix_web::dev::Server, TuskData)> {
 #[actix_web::main]
 async fn server_run(server: actix_web::dev::Server) -> std::io::Result<()> {
     server.await
-}
-
-#[cfg(test)]
-pub mod test {
-    use log::LevelFilter;
-    use tusk_core::config::TEST_CONFIGURATION;
-
-    pub fn init() {
-        let _ = env_logger::builder()
-            .filter_level(LevelFilter::Info)
-            .is_test(true)
-            .try_init();
-    }
 }

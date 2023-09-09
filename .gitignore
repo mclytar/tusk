@@ -2,3 +2,5 @@
 target/
 **/tusk.toml
 db_url
+cert.pem
+key.pem

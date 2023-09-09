@@ -3,10 +3,10 @@
 use systemd::daemon;
 use systemd_journal_logger::JournalLog;
 
-use tusk_core::error::Result;
+use tusk_core::error::TuskResult;
 
 /// Runs the server.
-pub fn run() -> Result<()> {
+pub fn run() -> TuskResult<()> {
     let (server, tusk) = crate::server_spawn()?;
 
     daemon::notify(false, [(daemon::STATE_READY, "1")].iter())?;

@@ -461,4 +461,4 @@ export class HTTPResponse {
         return this.xhr.response;
     }
 }
-//# sourceMappingURL=http.js.map
+//# sourceMappingURL=tera.js.map
