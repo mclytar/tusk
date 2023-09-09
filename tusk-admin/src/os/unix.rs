@@ -8,7 +8,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use tusk_core::error::TuskResult;
 
 /// Installs the server as a Unix daemon.
-pub fn service_install() -> Result<()> {
+pub fn service_install() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -25,7 +25,7 @@ pub fn service_install() -> Result<()> {
     Ok(())
 }
 /// Uninstalls the server as a Unix daemon.
-pub fn service_uninstall() -> Result<()> {
+pub fn service_uninstall() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -42,7 +42,7 @@ pub fn service_uninstall() -> Result<()> {
     Ok(())
 }
 /// Starts the server as a Unix daemon.
-pub fn service_start() -> Result<()> {
+pub fn service_start() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -55,7 +55,7 @@ pub fn service_start() -> Result<()> {
     Ok(())
 }
 /// Stops the server as a Unix daemon.
-pub fn service_stop() -> Result<()> {
+pub fn service_stop() -> TuskResult<()> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_chars("|/-\\ "));
     pb.enable_steady_tick(Duration::from_millis(50));
@@ -68,7 +68,7 @@ pub fn service_stop() -> Result<()> {
     Ok(())
 }
 /// Reloads the server and its configuration.
-pub fn service_reload() -> Result<()> {
+pub fn service_reload() -> TuskResult<()> {
     service_stop()?;
     service_start()?;
     Ok(())
