@@ -5,7 +5,7 @@ const SYSTEMD_UNIT_PATH: &'static str = "/etc/systemd/system/tusk.service";
 
 use std::time::{Duration};
 use indicatif::{ProgressBar, ProgressStyle};
-use tusk_core::error::Result;
+use tusk_core::error::TuskResult;
 
 /// Installs the server as a Unix daemon.
 pub fn service_install() -> Result<()> {
@@ -74,6 +74,6 @@ pub fn service_reload() -> Result<()> {
     Ok(())
 }
 /// Prints an error.
-pub fn print_error(e: tusk_core::error::Error) {
+pub fn print_error(e: tusk_core::error::TuskError) {
     println!("Cannot perform operation: {e}")
 }
