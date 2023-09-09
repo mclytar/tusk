@@ -175,7 +175,7 @@ pub mod test {
     async fn successful_login_attempt() {
         let tusk = TEST_CONFIGURATION.to_data();
         let session = create_empty_session().await;
-        let form = web::Form(SessionCreate::new("user", "1234567890"));
+        let form = web::Form(SessionCreate::new("user", "user#vX78"));
 
         let resp = SessionResource::post(tusk, session, form).await
             .expect("response");

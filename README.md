@@ -25,10 +25,10 @@ Well, I still need to define some details about that).
   - [x] ~~Unit tests on `tusk-admin`~~ (to be done, but not fundamental for now).
   - [x] Unit tests on `tusk-server`.
 - [x] **Done with the backend!**
-- [ ] Adjust icons handling.
-- [ ] Make sure that premium icons don't leak.
-- [ ] Check that everything is consistent and safe on the frontend part.
-- [ ] **Done with the frontend!**
+- [x] Adjust icons handling.
+- [x] Make sure that premium icons don't leak.
+- [x] Check that everything is consistent and safe on the frontend part.
+- [x] **Done with the frontend!**
 - [ ] `git push` on development machine.
 - [ ] Check that everything works on development and fix if not.
 - [ ] `git tag -a 0.1`

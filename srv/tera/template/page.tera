@@ -85,14 +85,14 @@
                 <img src="/static/tusk.svg" alt="Logo" width="32" height="32" class="d-none d-sm-inline-block align-text-top" style="filter: drop-shadow(0 0 1pt white)">
                 <span class="ms-2">Tusk Server</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="divNavbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button">
                 <span class="navbar-toggler-icon"></span>
             </button>
         </div>
     </nav>
     <div id="sidebar" class="d-flex flex-column flex-shrink-0 flex-grow-1 h-100 text-bg-dark offcanvas-xl offcanvas-start">
         <div class="d-flex d-xl-none flex-column ms-2 me-2 p-2">
-            <button type="button" class="btn-close ms-auto" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
+            <button type="button" class="btn-close ms-auto navbar-toggler"></button>
         </div>
         <div class="d-flex flex-column ms-2 me-2 p-2">
             <img src="/static/tusk.svg" alt="" width="128" height="128" class="d-inline-block ms-auto me-auto">
@@ -169,5 +169,19 @@
             })
         }
     </script>
-                                                                                                                                                                                {% block end %}{% endblock %}
+    <script type="module">
+        import {Offcanvas} from 'bootstrap';
+
+        const sidebar = new Offcanvas('#sidebar');
+
+        function toggle_sidebar() {
+            sidebar.toggle()
+        }
+
+        document.querySelectorAll(".navbar-toggler")
+            .forEach((btn) => {
+                btn.addEventListener("click", toggle_sidebar);
+            })
+    </script>
+    {% block end %}{% endblock %}
 {% endblock %}

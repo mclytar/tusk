@@ -2,13 +2,13 @@
 {% block main %}
 <article class="container-fluid bg-body-tertiary p-4">
     <h1>Version 0.1.0 is alive!</h1>
-    <p>This is the version 0.1.0 of the server app, with project codename <code>tusk</code> (not final).</p>
+    <p>This is the version 0.1.0 of Tusk.</p>
     <p>It may seem not a lot of work, but these were the actual steps that allowed this server app to be possible.</p>
     <h4>Checkpoint #1</h4>
     <ul>
         <li>Build a fully functioning server in Rust, serving a trivial HTTP request.</li>
         <li>Implement basic functionalities of continuous-integration and continuous-development;
-            in other words, it is a functionality that allows to keep working on the software while the software is up and running
+            very roughly speaking, CI/CD is a functionality that allows to keep working on the software while the software is up and running
             and integrates the new modifications automatically.</li>
         <li>Try not to over-analyze and write now functionalities that are only needed at a later point.</li>
     </ul>
@@ -23,7 +23,8 @@
     </ul>
     <p>At this point, we have basic web-app functionalities.
         The web-app is empty except for the log-in functionality, and log-in credentials are trivial but functioning.
-        Furthermore, to ease development at this stage, the <a class="icon-link" href="https://getbootstrap.com/" target="_blank">Bootstrap <i class="bi-box-arrow-up-right small"></i></a> framework is used.</p>
+        Furthermore, to ease development at this stage, the <a class="icon-link" href="https://getbootstrap.com/" target="_blank">Bootstrap <i class="bi-box-arrow-up-right small"></i></a> framework is used.
+        However, I am planning to switch to a custom framework in the (possibly near) future.</p>
     <h4>Checkpoint #3</h4>
     <ul>
         <li>Implement service/daemon functionalities working on both Windows and Linux operating systems.
@@ -41,7 +42,7 @@
     <p>This checkpoint was a bit more open-ended.
         The goal was to implement Cloud functionalities, so that the web-app is also useful, other than usable.
         After the last security checks, code reviews and a bit of documentation, this software is ready to be put on a proper online machine.</p>
-    <p><b>Disclaimer:</b> this software implements basic security functionalities, the OWASP guidelines and a bit of common sense; however, this does not mean that the software is perfectly safe.
+    <p class="text-danger"><b>Disclaimer:</b> this software implements basic security functionalities, the OWASP guidelines and a bit of common sense; however, this does not mean that the software is perfectly safe.
         Please do not store sensitive information.</p>
 </article>
 {% endblock %}

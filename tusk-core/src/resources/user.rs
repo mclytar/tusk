@@ -233,7 +233,7 @@ mod test {
             let user = User::read_by_username(db_connection, "admin")
                 .expect("user");
             assert_eq!(user.username(), "admin");
-            assert!(user.verify_password(&Secret::new(String::from("admin"))));
+            assert!(user.verify_password(&Secret::new(String::from("admin#f9E5"))));
 
             Ok::<_, ()>(())
         });
@@ -287,13 +287,13 @@ mod test {
                 .expect("user");
 
             assert_eq!(user.username(), "test");
-            assert!(user.verify_password(&Secret::new(String::from("test"))));
+            assert!(user.verify_password(&Secret::new(String::from("test#7U5c"))));
 
             // TEST
             let user = user.update_username(db_connection, "user5678")
                 .expect("user");
             assert_eq!(user.username(), "user5678");
-            assert!(user.verify_password(&Secret::new(String::from("test"))));
+            assert!(user.verify_password(&Secret::new(String::from("test#7U5c"))));
 
             let mut users = User::read_all(db_connection).expect("users");
             users.sort_by(|a, b| a.username().cmp(b.username()));
@@ -323,13 +323,13 @@ mod test {
                 .expect("user");
 
             assert_eq!(user.username(), "test");
-            assert!(user.verify_password(&Secret::new(String::from("test"))));
+            assert!(user.verify_password(&Secret::new(String::from("test#7U5c"))));
 
             // TEST
-            let user = user.update_password(db_connection, &Secret::new(String::from("user5678")))
+            let user = user.update_password(db_connection, &Secret::new(String::from("test#FFcc")))
                 .expect("user");
             assert_eq!(user.username(), "test");
-            assert!(user.verify_password(&Secret::new(String::from("user5678"))));
+            assert!(user.verify_password(&Secret::new(String::from("test#FFcc"))));
 
             let mut users = User::read_all(db_connection).expect("users");
             users.sort_by(|a, b| a.username().cmp(b.username()));
@@ -450,7 +450,7 @@ mod test {
             .expect("database connection");
 
         let user = User::read_by_username(&mut db_connection, "user").expect("user");
-        assert!(user.verify_password(&Secret::new(String::from("1234567890"))));
+        assert!(user.verify_password(&Secret::new(String::from("user#vX78"))));
         let leaked_password = user.password.0.expose_secret();
 
         let user_json = serde_json::to_string(&user).expect("json string");

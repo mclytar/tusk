@@ -2,7 +2,7 @@
 
 use actix_session::Session;
 use actix_web::{web, HttpResponse};
-use secrecy::Secret;
+use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
 use tusk_core::config::{TuskData};
 use tusk_core::resources::User;
@@ -63,11 +63,32 @@ impl UserPatchData {
             }
         }
 
+        let old_username = user.username().to_owned();
+        let mut user_inputs = vec![old_username.as_str(), "Tusk"];
         if let Some(username) = &self.username {
             user = user.update_username(db_connection, username)?;
+            user_inputs.push(username);
         }
 
         if let Some(password) = &self.password {
+            if password.expose_secret().len() < 8 {
+                return HttpError::unprocessable_entity()
+                    .wrap_err()
+                    .with_body("The new password is too small.");
+            }
+            if password.expose_secret().len() > 70 {
+                return HttpError::unprocessable_entity()
+                    .wrap_err()
+                    .with_body("The new password is too large.");
+            }
+            if zxcvbn::zxcvbn(password.expose_secret(), &user_inputs)
+                .or_internal_server_error()
+                .with_log_error()?
+                .score() < 3 {
+                return HttpError::unprocessable_entity()
+                    .wrap_err()
+                    .with_body("The new password is too weak.");
+            }
             user.update_password(db_connection, password)?;
         }
 
@@ -228,7 +249,7 @@ mod test {
         let data = web::Json(UserPatchData {
             username: Some(String::from("dummy_2")),
             password: None,
-            proof: Some(Secret::from("dummy".to_owned()))
+            proof: Some(Secret::from("dummy#aW74Qz7".to_owned()))
         });
 
         let resp = UserResource::patch(tusk.clone(), session.clone(), data, web::Path::extract(&req).await.unwrap()).await
@@ -246,8 +267,8 @@ mod test {
             .to_http_request();
         let data = web::Json(UserPatchData {
             username: None,
-            password: Some(Secret::from("password".to_owned())),
-            proof: Some(Secret::from("dummy".to_owned()))
+            password: Some(Secret::from("dummy#aC7e".to_owned())),
+            proof: Some(Secret::from("dummy#aW74Qz7".to_owned()))
         });
 
         let resp = UserResource::patch(tusk.clone(), session.clone(), data, web::Path::extract(&req).await.unwrap()).await
@@ -263,8 +284,8 @@ mod test {
             .expect("Database connection");
         let resp = UserPatchData {
             username: Some(String::from("dummy")),
-            password: Some(Secret::from("dummy".to_owned())),
-            proof: Some(Secret::from("password".to_owned()))
+            password: Some(Secret::from("dummy#aW74Qz7".to_owned())),
+            proof: Some(Secret::from("dummy#aC7e".to_owned()))
         }.apply(&mut db_connection, "dummy_2", "dummy_2")
             .expect("User's username back to `dummy`.");
         assert_eq!(resp.status(), StatusCode::OK);

@@ -25,6 +25,7 @@ tokio = "1"
 toml = "0.7"
 tusk-derive = { path = "../tusk-derive" }
 tusk-core = { path = "../tusk-core" }
+zxcvbn = "2.2"
 
 [dev-dependencies]
 tusk-core = { path = "../tusk-core", features = ["test_utils"] }

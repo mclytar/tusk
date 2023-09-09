@@ -448,6 +448,14 @@ impl HttpError {
     pub fn i_am_a_teapot() -> Self {
         HttpError::from(StatusCode::IM_A_TEAPOT)
     }
+    /// Creates a new instance of `HttpError` with status code `UNPROCESSABLE ENTITY`.
+    ///
+    /// ## 422 -- UNPROCESSABLE ENTITY
+    ///
+    /// The request was well-formed but was unable to be followed due to semantic errors.
+    pub fn unprocessable_entity() -> Self {
+        HttpError::from(StatusCode::UNPROCESSABLE_ENTITY)
+    }
 
     /// Creates a new instance of `HttpError` with status code `INTERNAL SERVER ERROR`.
     ///

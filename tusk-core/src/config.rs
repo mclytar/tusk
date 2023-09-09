@@ -433,10 +433,10 @@ pub static TEST_CONFIGURATION: once_cell::sync::Lazy<TuskConfiguration> = once_c
     let mut db_connection = config.database_connect()
         .expect("database connection");
 
-    User::create(&mut db_connection, "test", Secret::new(String::from("test"))).expect("database connection");
-    User::create(&mut db_connection, "dummy", Secret::new(String::from("dummy"))).expect("database connection");
-    User::create(&mut db_connection, "admin", Secret::new(String::from("admin"))).expect("database connection");
-    User::create(&mut db_connection, "user", Secret::new(String::from("1234567890"))).expect("database connection");
+    User::create(&mut db_connection, "test", Secret::new(String::from("test#7U5c"))).expect("database connection");
+    User::create(&mut db_connection, "dummy", Secret::new(String::from("dummy#aW74Qz7"))).expect("database connection");
+    User::create(&mut db_connection, "admin", Secret::new(String::from("admin#f9E5"))).expect("database connection");
+    User::create(&mut db_connection, "user", Secret::new(String::from("user#vX78"))).expect("database connection");
 
     Role::assign(&mut db_connection, "admin").to("admin").expect("role assignment");
 
