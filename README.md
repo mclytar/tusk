@@ -24,7 +24,7 @@ Well, I still need to define some details about that).
   - [x] Benchmark tests on `tusk-core` (to check that fake password hashing is consistent with real password hashing).
   - [x] ~~Unit tests on `tusk-admin`~~ (to be done, but not fundamental for now).
   - [x] Unit tests on `tusk-server`.
-- [ ] **Done with the backend!**
+- [x] **Done with the backend!**
 - [ ] Adjust icons handling.
 - [ ] Make sure that premium icons don't leak.
 - [ ] Check that everything is consistent and safe on the frontend part.
