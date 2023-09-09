@@ -104,7 +104,7 @@
                 {% for role in roles -%}
                     <span class="badge tusk-role tusk-role-{{ role.name }}">{{ role.display }}</span>
                     {% if role.name == "admin" %}{% set_global user_has_role_admin = true %}{% endif -%}
-                    {% if role.name == "storage" %}{% set_global user_has_role_directory = true %}{% endif -%}
+                    {% if role.name == "directory" %}{% set_global user_has_role_directory = true %}{% endif -%}
                     {% if role.name == "user" %}{% set_global user_has_role_user = true %}{% endif -%}
                 {% endfor -%}
             </div>

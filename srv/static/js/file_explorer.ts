@@ -29,11 +29,11 @@ interface FileDescriptor {
 }
 
 /**
- * Descriptor for a storage.
+ * Descriptor for a directory.
  */
 interface DirectoryDescriptor {
     filename: string,
-    kind: "storage",
+    kind: "directory",
     children: number,
     created: number,
     last_access: number,
@@ -206,19 +206,19 @@ class History<T extends PartialEq<T>> {
 }
 
 /**
- * Represents an item in the storage tree.
+ * Represents an item in the directory tree.
  *
- * Provides the methods and handles the events relative to the designated storage tree item.
+ * Provides the methods and handles the events relative to the designated directory tree item.
  */
 class DirectoryTreeItem {
     element: Element;
     file_explorer: FileExplorer;
 
     /**
-     * Constructs a new storage tree item.
+     * Constructs a new directory tree item.
      *
      * @param file_explorer {@link HTMLFileExplorer} object to which this item belongs.
-     * @param directory Descriptor of the storage as received by the API endpoint.
+     * @param directory Descriptor of the directory as received by the API endpoint.
      */
     constructor(file_explorer: FileExplorer, directory: DirectoryDescriptor) {
         let header_expand_button = document.createElement("i");
@@ -269,7 +269,7 @@ class DirectoryTreeItem {
     }
 
     /**
-     * Loads all the child elements of the current storage tree item.
+     * Loads all the child elements of the current directory tree item.
      */
     async load_children() {
         let path = this.path();
@@ -279,14 +279,14 @@ class DirectoryTreeItem {
             .Accept("application/json")
             .send();
 
-        if (response.status() !== HTTPStatusCode.OK) throw new Error("Unable to retrieve storage.");
+        if (response.status() !== HTTPStatusCode.OK) throw new Error("Unable to retrieve directory.");
 
         let container = this.element.querySelector(":scope > ul");
-        if (!container) throw new Error("No storage tree container found.");
+        if (!container) throw new Error("No directory tree container found.");
         container.innerHTML = "";
 
         for (let directory of response.body()) {
-            if (directory.kind !== "storage") continue;
+            if (directory.kind !== "directory") continue;
 
             let directory_tree_item = new DirectoryTreeItem(this.file_explorer, directory);
 
@@ -296,7 +296,7 @@ class DirectoryTreeItem {
     }
 
     /**
-     * Retrieves the path to which this storage tree item refers.
+     * Retrieves the path to which this directory tree item refers.
      */
     path(): string {
         let current_element = <HTMLLIElement | null>this.element;
@@ -381,7 +381,7 @@ class FileViewerItem {
      * Constructs a new file viewer item.
      *
      * @param file_explorer {@link HTMLFileExplorer} object to which this item belongs.
-     * @param item Descriptor of the file or storage as received by the API endpoint.
+     * @param item Descriptor of the file or directory as received by the API endpoint.
      */
     constructor(file_explorer: FileExplorer, item: Descriptor) {
         let content_filename = document.createElement("div");
@@ -390,7 +390,7 @@ class FileViewerItem {
         let detail_modified = document.createElement("div");
         let element = document.createElement("li");
 
-        if (item.kind === "storage") {
+        if (item.kind === "directory") {
             let image_large = document.createElement("img");
             image_large.src = `/static/ui/light/large/folder.${ICON_FILETYPE}`;
             image_large.classList.add("icon-large");
@@ -472,7 +472,7 @@ class FileViewerItem {
     /**
      * Handles the dblclick event of a file viewer item.
      *
-     * A file viewer item is either a file or a storage.
+     * A file viewer item is either a file or a directory.
      * Upon double-clicking a file, if the operation is supported, the browser will show the contents
      * of the file; otherwise, it displays a popup saying that the file format is not supported,
      * giving the possibility to download the file.
@@ -515,7 +515,7 @@ class BreadcrumbItem {
      * Constructs a new breadcrumb item.
      *
      * @param file_explorer {@link HTMLFileExplorer} object to which this item belongs.
-     * @param item Component of the storage path.
+     * @param item Component of the directory path.
      */
     constructor(file_explorer: FileExplorer, item: string) {
         let element_link = document.createElement("a");
@@ -534,7 +534,7 @@ class BreadcrumbItem {
     }
 
     /**
-     * Retrieves the path to which this storage tree item refers.
+     * Retrieves the path to which this directory tree item refers.
      */
     path(): string {
         let current_element = <Element | null>this.element;
@@ -628,11 +628,11 @@ class FileExplorer {
     }
 
     /**
-     * Returns the element containing the storage tree of the file explorer.
+     * Returns the element containing the directory tree of the file explorer.
      */
     directory_tree_element(): Element {
-        let directory_tree = this.root.querySelector("main .sf-component-storage-tree");
-        if (!directory_tree) throw new Error("File explorer does not have storage tree.");
+        let directory_tree = this.root.querySelector("main .sf-component-directory-tree");
+        if (!directory_tree) throw new Error("File explorer does not have directory tree.");
         return directory_tree;
     }
 
@@ -641,7 +641,7 @@ class FileExplorer {
      */
     file_viewer_element(): Element {
         let directory_tree = this.root.querySelector("main .sf-component-file-viewer");
-        if (!directory_tree) throw new Error("File explorer does not have storage tree.");
+        if (!directory_tree) throw new Error("File explorer does not have directory tree.");
         return directory_tree;
     }
 
@@ -688,7 +688,7 @@ class FileExplorer {
             .body_form(data)
             .send();
 
-        if (response.status() !== HTTPStatusCode.CREATED) throw new Error("Unable to create storage.");
+        if (response.status() !== HTTPStatusCode.CREATED) throw new Error("Unable to create directory.");
 
         await this.load_view();
     }
@@ -711,7 +711,7 @@ class FileExplorer {
             .body_form(data)
             .send();
 
-        if (response.status() !== HTTPStatusCode.CREATED) throw new Error("Unable to create storage.");
+        if (response.status() !== HTTPStatusCode.CREATED) throw new Error("Unable to create directory.");
 
         await this.load_view();
     }
@@ -735,7 +735,7 @@ class FileExplorer {
             .Accept("application/json")
             .send();
 
-        if (response.status() !== HTTPStatusCode.OK) throw new Error("Unable to retrieve storage.");
+        if (response.status() !== HTTPStatusCode.OK) throw new Error("Unable to retrieve directory.");
 
         let file_viewer = this.file_viewer_element();
         let directory_tree = this.directory_tree_by_path(path.path);
@@ -746,7 +746,7 @@ class FileExplorer {
         if (directory_tree) directory_tree.innerHTML = "";
 
         for (let directory of response.body()) {
-            if (directory.kind !== "storage") continue;
+            if (directory.kind !== "directory") continue;
 
             let directory_tree_item = new DirectoryTreeItem(this, directory);
             let file_viewer_item = new FileViewerItem(this, directory);
@@ -815,7 +815,7 @@ class FileExplorer {
             .Accept("application/json")
             .send();
 
-        if (response.status() !== HTTPStatusCode.OK) throw new Error("Unable to retrieve storage.");
+        if (response.status() !== HTTPStatusCode.OK) throw new Error("Unable to retrieve directory.");
 
         let file_viewer = this.file_viewer_element();
         let directory_tree = this.directory_tree_element();
@@ -824,7 +824,7 @@ class FileExplorer {
         directory_tree.innerHTML = "";
 
         for (let directory of response.body()) {
-            if (directory.kind !== "storage") continue;
+            if (directory.kind !== "directory") continue;
 
             let directory_tree_item = new DirectoryTreeItem(this, directory);
             let file_viewer_item = new FileViewerItem(this, directory);
@@ -847,14 +847,14 @@ class FileExplorer {
             .Accept("application/json")
             .send();
 
-        if (response.status() !== HTTPStatusCode.OK) throw new Error("Unable to retrieve storage.");
+        if (response.status() !== HTTPStatusCode.OK) throw new Error("Unable to retrieve directory.");
 
         let directory_tree = this.directory_tree_element();
 
         directory_tree.innerHTML = "";
 
         for (let directory of response.body()) {
-            if (directory.kind !== "storage") continue;
+            if (directory.kind !== "directory") continue;
 
             let directory_tree_item = new DirectoryTreeItem(this, directory);
 

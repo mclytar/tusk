@@ -492,7 +492,7 @@ impl serde::Serialize for StoragePathRead {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let (add_len, kind, size, children) = match self.kind {
             StoragePathReadKind::File { size } => (1, "file", Some(size), None),
-            StoragePathReadKind::Directory { children } => (1, "storage", None, Some(children)),
+            StoragePathReadKind::Directory { children } => (1, "directory", None, Some(children)),
             StoragePathReadKind::None => (0, "none", None, None)
         };
 
@@ -696,11 +696,11 @@ mod test {
         assert_eq!(status, StatusCode::OK);
         assert_eq!(body.len(), 3);
         assert_eq!(&body[0].filename, "folder_1");
-        assert_eq!(&body[0].kind, "storage");
+        assert_eq!(&body[0].kind, "directory");
         assert!(&body[0].size.is_none());
         assert_eq!(&body[0].children.unwrap(), &1);
         assert_eq!(&body[1].filename, "folder_2");
-        assert_eq!(&body[1].kind, "storage");
+        assert_eq!(&body[1].kind, "directory");
         assert!(&body[1].size.is_none());
         assert_eq!(&body[1].children.unwrap(), &0);
         assert_eq!(&body[2].filename, "user.txt");
