@@ -7,6 +7,9 @@ use tusk_core::error::TuskResult;
 
 /// Runs the server.
 pub fn run() -> TuskResult<()> {
+    JournalLog::default().install()
+        .expect("a functioning logger");
+
     let (server, tusk) = crate::server_spawn()?;
 
     daemon::notify(false, [(daemon::STATE_READY, "1")].iter())?;
@@ -25,10 +28,4 @@ pub fn run() -> TuskResult<()> {
 
     crate::server_run(server)?;
     Ok(())
-}
-
-/// Initializes the Unix logger, which stores the log information in the Journal.
-pub fn initialize_logger() {
-    JournalLog::default().install()
-        .expect("a functioning logger");
 }
