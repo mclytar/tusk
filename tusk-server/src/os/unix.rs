@@ -33,7 +33,7 @@ pub fn run() -> TuskResult<()> {
 
     drop_privileges()?;
 
-    let _w = crate::spawn_watcher(tusk);
+    let _w = crate::spawn_watcher(&tusk);
 
     crate::run_server(server)?;
 
