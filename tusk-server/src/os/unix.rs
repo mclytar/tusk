@@ -1,6 +1,5 @@
 //! Defines the necessary functions to make the server run as a Unix daemon.
 
-use log::LevelFilter;
 use systemd::daemon;
 use systemd_journal_logger::JournalLog;
 
