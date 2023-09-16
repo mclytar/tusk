@@ -7,18 +7,18 @@
 
 pub mod session;
 pub mod storage;
-pub mod users;
+pub mod account;
 
-use actix_web::web::{ServiceConfig};
-use tusk_core::config::{TuskConfiguration};
+use actix_web::web::ServiceConfig;
+use crate::api::account::AccountPasswordResource;
 use crate::api::storage::StorageResource;
-use crate::api::session::{SessionResource};
-use crate::api::users::UserResource;
+use crate::api::session::SessionResource;
 
 /// Configures the server by adding the corresponding API resources.
-pub fn configure(cfg: &mut ServiceConfig, _tusk: &TuskConfiguration) {
-    cfg.service(StorageResource)
+pub fn configure(cfg: &mut ServiceConfig) {
+    cfg
+        .service(AccountPasswordResource)
         .service(SessionResource)
-        .service(UserResource);
-    // TODO...
+        .service(StorageResource)
+    ;
 }

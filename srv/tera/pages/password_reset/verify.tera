@@ -1,59 +1,73 @@
-{% extends "template/page.tera" %}
+{% extends "template/base.tera" %}
 {% block head %}
     {{ super() }}
+    <style>
+        body {
+            display: flex;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .gradient-custom {
+            /* fallback for old browsers */
+            background: #6a11cb;
+
+            /* Chrome 10-25, Safari 5.1-6 */
+            background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+
+            /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+        }
+
+        @media (min-width: 576px) {
+            .login-card {
+                width: 400px;
+            }
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/@zxcvbn-ts/core@2.0.0/dist/zxcvbn-ts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxcvbn-ts/language-common@2.0.0/dist/zxcvbn-ts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxcvbn-ts/language-en@2.0.0/dist/zxcvbn-ts.js"></script>
 {% endblock %}
-{% block main %}
-    <section class="container-fluid bg-body-tertiary p-4">
-        <h1>Settings</h1>
-        <br/>
-        <div class="row mb-3">
-            <label for="username" class="col-sm-2 col-form-label">Username:</label>
-            <div class="col-sm-10">
-                <input type="text" class="form-control" id="username" disabled>
+{% block body %}
+    <div class="w-100 h-100 gradient-custom d-flex align-items-center">
+        <div class="card mx-auto shadow-sm login-card">
+            <div class="card-header">
+                <h3>Tusk server</h3>
+            </div>
+            <div class="card-body">
+                <h4 class="mb-3">Password reset</h4>
+                <p>Choose a new password for your account.</p>
+                <form name="password_reset" class="needs-validation" action="javascript:on_password_change_confirm()" novalidate>
+                    {% if get["token"] %}
+                    <input type="hidden" name="token" value={{ get["token"] | urlencode }}>
+                    {% endif %}
+                    <div class="form-floating mb-3">
+                        <input type="password" name="password_new" class="form-control" placeholder="password" oninput="on_password_change_password_new_input(this)" required>
+                        <label for="inputPassword" class="form-label">Password</label>
+                        <div class="progress mt-3" role="progressbar">
+                            <div id="password_change_pg_strength_value" class="progress-bar bg-alert w-0"></div>
+                        </div>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" name="password_repeat" class="form-control" placeholder="password" required>
+                        <label for="inputPassword" class="form-label">Repeat password</label>
+                    </div>
+                    <p>The new password should be at least 8 characters long. Only strong passwords are allowed.</p>
+                    <div id="password_change_warning_container"></div>
+                    <div id="password_change_alert_container"></div>
+                    <div id="formAlertContainer"></div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
             </div>
         </div>
-        <br/>
-        <hr/>
-        <h2>Change password</h2>
-        <br />
-        <form name="password_change" action="">
-            <div class="row mb-3">
-                <label for="password_old" class="col-sm-2 col-form-label">Old password</label>
-                <div class="col-sm-10">
-                    <input type="password" class="form-control" id="password_old">
-                </div>
-            </div>
-            <div class="row mb-3">
-                <label for="password_new" class="col-sm-2 col-form-label">New password</label>
-                <div class="col-sm-10">
-                    <input type="password" class="form-control" id="password_new" oninput="on_password_change_password_new_input(this)">
-                    <div class="progress mt-3" role="progressbar">
-                        <div id="password_change_pg_strength_value" class="progress-bar bg-alert w-0"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mb-3">
-                <label for="password_repeat" class="col-sm-2 col-form-label">Repeat new password</label>
-                <div class="col-sm-10">
-                    <input type="password" class="form-control" id="password_repeat">
-                </div>
-            </div>
-            <p>The new password should be at least 8 characters long. Only strong passwords are allowed.</p>
-            <div id="password_change_warning_container"></div>
-            <div id="password_change_alert_container"></div>
-            <div class="row mb-3">
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button type="button" class="btn btn-danger rounded-2" onclick="on_password_change_confirm()">Confirm</button>
-                </div>
-            </div>
-        </form>
-    </section>
+    </div>
     <script>
-        let input_username = document.getElementById("username");
-        input_username.value = document['username'];
+        //let input_username = document.getElementById("username");
+        //input_username.value = document['username'];
 
         const password_check_options = {
             translations: zxcvbnts['language-en'].translations,
@@ -87,7 +101,7 @@
 
         function on_password_change_password_new_input(sender) {
             let last_value = sender.value;
-            let score = zxcvbnts.core.zxcvbn(last_value, [document['username'], "Tusk"]);
+            let score = zxcvbnts.core.zxcvbn(last_value, ["Tusk"]);
             let strength_bar = document.getElementById("password_change_pg_strength_value");
 
             setTimeout(() => {
@@ -129,7 +143,7 @@
         }
 
         function on_password_change_confirm() {
-            let form = document.forms.namedItem("password_change");
+            let form = document.forms.namedItem("password_reset");
 
             if (form['password_new'].value !== form['password_repeat'].value) {
                 password_change_show_alert("The two passwords do not match.");
@@ -138,7 +152,7 @@
                 return;
             }
 
-            let data = JSON.stringify({ "password": form["password_new"].value, "proof": form["password_old"].value })
+            let data = JSON.stringify({ "password": form["password_new"].value, "proof": {{ get["token"] | json_encode }}, "proof_type": "token" })
 
             fetch(`/v1/users/${document['username']}`, {
                 method: "PATCH",
@@ -148,10 +162,9 @@
                 body: data
             }).then((res) => {
                 if (res.status === 401) {
-                    form["password_old"].classList.add("is-invalid");
-                    password_change_show_alert("Incorrect password.");
+                    password_change_show_alert("A problem occurred with authentication.");
                 } else if (res.status === 200) {
-                    password_change_show_alert(`Success!<br/><br/>For security reasons, you will be disconnected.`, "success");
+                    password_change_show_alert(`Success!<br/><br/>Now you will be redirected to the login screen.`, "success");
                     setTimeout(() => window.location.href = "/login", 3000);
                 }
             });

@@ -1,108 +1,152 @@
 //! This module contains the necessary structures and functions to load the configuration from
 //! `tusk.toml`.
 
-use std::fs::File;
-use std::io::{BufReader, ErrorKind};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+mod diesel;
+mod mail;
+mod redis;
+mod ssl;
+mod tusk;
+
+use std::collections::HashMap;
+use std::future::Future;
+use std::io::{ErrorKind};
+use std::path::{PathBuf};
+use std::pin::Pin;
 use std::sync::{Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use actix_web::web;
-use diesel::{r2d2::{ConnectionManager, Pool, PooledConnection}, PgConnection};
-use diesel_migrations::{embed_migrations, MigrationHarness};
-use secrecy::{ExposeSecret, Secret};
+use actix_web::{cookie, FromRequest, HttpRequest, web};
+use ::diesel::{r2d2::{ConnectionManager, Pool, PooledConnection}, PgConnection, Connection};
+use ::diesel_migrations::{embed_migrations, MigrationHarness};
+use actix_session::{Session, SessionMiddleware};
+use actix_session::config::{PersistentSession, TtlExtensionPolicy};
+use actix_session::storage::RedisSessionStore;
+use actix_web::dev::Payload;
+use lettre::{Message, SmtpTransport, Transport};
+use lettre::transport::smtp::response::Response;
 use serde::Deserialize;
-use tera::Tera;
+use tera::{Context, Tera};
+use crate::{DieselError, PooledPgConnection};
 
-use crate::error::{TuskError, TuskResult};
+use crate::error::{HttpOkOr, TuskError, TuskResult};
+use crate::resources::User;
+use crate::session::AuthenticatedSession;
 
 /// `actix_web::web::Data` wrapper for [`TuskConfiguration`].
 pub type TuskData = web::Data<TuskConfiguration>;
+/// Boxed async block type to deal with custom implementors of [`FromRequest`].
+pub type BoxedAsyncBlock<T> = Pin<Box<dyn Future<Output = Result<T, <T as FromRequest>::Error>>>>;
 
-/// Represents the `diesel` section of the `tusk.toml` file.
-#[derive(Clone, Debug, Deserialize)]
-pub struct DieselConfigurationSection {
-    url: Secret<String>
+/// Main extractor for all the requests.
+///
+/// Contains configuration data, session data and several utility methods to easily address
+/// the HTTP requests.
+pub struct Tusk {
+    config: Arc<TuskConfiguration>,
+    get: HashMap<String, String>,
+    session: Session
 }
-/// Represents the `redis` section of the `tusk.toml` file.
-#[derive(Clone, Debug, Deserialize)]
-pub struct RedisConfigurationSection {
-    url: String
-}
-/// Represents the `ssl` section of the `tusk.toml` file.
-#[derive(Clone, Debug, Deserialize)]
-pub struct SslConfigurationSection {
-    cert_file: String,
-    key_file: String
-}
-impl SslConfigurationSection {
-    /// Converts this section into a TLS server configuration.
-    pub fn into_server_configuration(self) -> TuskResult<rustls::ServerConfig> {
-        let file = File::open(&self.cert_file)?;
-        let mut reader = BufReader::new(file);
-        let certs: Vec<_> = rustls_pemfile::certs(&mut reader)?
-            .into_iter()
-            .map(rustls::Certificate)
-            .collect();
+impl Tusk {
+    /// Returns an [`AuthenticatedSession`] if the user is logged in, and an `UNAUTHORIZED` error
+    /// otherwise.
+    pub fn authenticate(&self) -> TuskResult<AuthenticatedSession> {
+        AuthenticatedSession::try_from(&self.session)
+    }
+    /// Creates a new session for the specified user, effectively logging in the user.
+    pub fn log_in(&self, user: &User) -> TuskResult<()> {
+        self.session.renew();
+        self.session.insert("auth_session", AuthenticatedSession::from(user))
+            .or_internal_server_error()
+            .log_error()
+    }
+    /// Deletes the session from the browser and from the backend,
+    /// effectively logging out the user.
+    pub fn log_out(&self) {
+        self.session.clear();
+        self.session.purge();
+    }
+    /// Returns a reference to the configuration data loaded from the file.
+    pub fn config(&self) -> &TuskConfiguration {
+        self.config.as_ref()
+    }
+    /// Returns a Tera context with the default information.
+    pub fn context(&self) -> Context {
+        let mut context = tera::Context::new();
 
-        if certs.len() == 0 {
-            log::error!("No certificate found.");
-            return Err(TuskError::CertificatesNotFound);
-        }
-        log::info!("Found {} certificates.", certs.len());
+        context.insert("protocol", "https");
+        context.insert("www_domain", self.config.www_domain());
+        context.insert("api_domain", self.config.api_domain());
+        context.insert("ui_icon_filetype", self.config.ui_icon_filetype());
+        context.insert("get", &self.get);
 
-        let file = File::open(&self.key_file)?;
-        let mut reader = BufReader::new(file);
-        let keys: Vec<_> = rustls_pemfile::pkcs8_private_keys(&mut reader)?
-            .into_iter()
-            .map(rustls::PrivateKey)
-            .collect();
-
-        if keys.len() > 0 { log::info!("Found {} keys, using the first one available.", keys.len()) };
-
-        let key = keys.into_iter()
-            .next()
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, format!("No key in file '{}'.", self.key_file)))?;
-
-        log::info!("Key file loaded");
-
-        let config = rustls::ServerConfig::builder()
-            .with_safe_defaults()
-            .with_no_client_auth()
-            .with_single_cert(certs, key)?;
-
-        Ok(config)
+        context
+    }
+    /// Returns a connection to the database.
+    pub fn db(&self) -> TuskResult<PooledPgConnection> {
+        Ok(self.config.db()?)
+    }
+    /// Returns a rendered Tera page.
+    pub fn render<S: AsRef<str>>(&self, name: S, context: &Context) -> TuskResult<String> {
+        let tera = match self.config.tera.read() {
+            Ok(tera) => tera,
+            Err(_) => return TuskError::internal_server_error().bail()
+        };
+        let result = tera.render(name.as_ref(), context)?;
+        Ok(result)
+    }
+    /// Sends the given message by email.
+    pub fn send_email(&self, message: &Message) -> TuskResult<Response> {
+        self.config.send_email(message)
     }
 }
-/// Represents the `tusk.serve` section of the `tusk.toml` file.
-#[derive(Clone, Debug, Deserialize)]
-pub struct TuskServeConfigurationSection {
-    root: String,
-    tera_templates: Option<String>,
-    static_files: Option<String>,
-    user_directories: Option<String>
+impl FromRequest for Tusk {
+    type Error = TuskError;
+    type Future = BoxedAsyncBlock<Self>;
+
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let config_future = web::Data::<TuskConfiguration>::extract(req);
+        let get_future = web::Query::<HashMap<String, String>>::extract(req);
+        let session_future = Session::extract(req);
+
+        Box::pin(async move {
+            let config = match config_future.await {
+                Ok(config) => config.into_inner(),
+                Err(e) => {
+                    log::error!("{e}");
+                    return TuskError::internal_server_error().bail();
+                }
+            };
+            let get = match get_future.await {
+                Ok(get) => get.into_inner(),
+                Err(e) => {
+                    log::error!("{e}");
+                    return TuskError::internal_server_error().bail();
+                }
+            };
+            let session = match session_future.await {
+                Ok(session) => session,
+                Err(e) => {
+                    log::error!("{e}");
+                    return TuskError::internal_server_error().bail();
+                }
+            };
+
+            Ok(Tusk {
+                config,
+                get,
+                session
+            })
+        })
+    }
 }
-/// Represents the `tusk.ui` section of the `tusk.toml` file.
-#[derive(Clone, Debug, Deserialize)]
-pub struct TuskUiConfigurationSection {
-    icon_filetype: String
-}
-/// Represents the `tusk` section of the `tusk.toml` file.
-#[derive(Clone, Debug, Deserialize)]
-pub struct TuskConfigurationSection {
-    log_level: log::LevelFilter,
-    www_domain: String,
-    api_domain: String,
-    serve: TuskServeConfigurationSection,
-    ui: TuskUiConfigurationSection
-}
+
 /// Represents the file `tusk.toml`.
 #[derive(Clone, Debug, Deserialize)]
 pub struct TuskConfigurationFile {
-    diesel: DieselConfigurationSection,
-    redis: RedisConfigurationSection,
-    ssl: SslConfigurationSection,
-    tusk: TuskConfigurationSection
+    diesel: diesel::Diesel,
+    mail: mail::Mail,
+    redis: redis::Redis,
+    ssl: ssl::Ssl,
+    tusk: tusk::Tusk
 }
 impl TuskConfigurationFile {
     /// Imports `tusk.toml` from a known location.
@@ -157,109 +201,69 @@ impl TuskConfigurationFile {
 
     /// Finalizes the configuration file and constructs a [`TuskConfiguration`] structure.
     pub fn into_tusk(self) -> TuskResult<TuskConfiguration> {
-        let extract_from_path = |root: &PathBuf, custom: Option<String>, default: &'static str| match custom {
-            Some(path) => PathBuf::from(&path),
-            None => {
-                let mut path = root.clone();
-                path.push(default);
-                path
-            }
-        };
-
         #[allow(unused)]
-        let TuskConfigurationSection {
+        let tusk::Tusk {
             log_level,
             www_domain,
             api_domain,
-            serve: TuskServeConfigurationSection {
-                root,
-                tera_templates,
-                static_files,
-                user_directories
-            },
-            ui: TuskUiConfigurationSection {
+            contacts,
+            serve,
+            ui: tusk::ui::Ui {
                 icon_filetype: ui_icon_filetype
             }
         } = self.tusk;
 
-        let root = PathBuf::from(root);
-        let tera_templates = extract_from_path(&root, tera_templates, "tera");
-        let static_files = extract_from_path(&root, static_files, "static");
-        let user_directories = extract_from_path(&root, user_directories, "storage");
+        let tera_templates = serve.tera_templates();
+        let static_files = serve.static_files();
+        let user_directories = serve.user_directories();
 
         #[cfg(not(test))]
         log::set_max_level(log_level);
 
-        let mut tera_path = tera_templates.clone();
-        tera_path.push("**");
-        tera_path.push("*.tera");
-        let tera = Tera::new(tera_path.to_string_lossy().as_ref())?;
-        for template in tera.get_template_names() {
-            log::info!("Loaded Tera template {template}");
-        }
+        log::info!("Loading Tera templates from `{}`", tera_templates.display());
+        log::info!("Loading static files from `{}`", static_files.display());
+        log::info!("Loading user directories from `{}`", user_directories.display());
 
-        let tera = Arc::new(RwLock::new(tera));
-
-        let redis_uri = self.redis.url;
-        let session_key = actix_web::cookie::Key::generate();
-        let session_lifecycle = actix_session::config::PersistentSession::default()
-            .session_ttl(actix_web::cookie::time::Duration::minutes(15))
-            .session_ttl_extension_policy(actix_session::config::TtlExtensionPolicy::OnEveryRequest);
-
-        let session_configuration = SessionConfiguration {
-            redis_uri,
-            session_key,
-            session_lifecycle
-        };
-
-        let connection_manager = ConnectionManager::new(self.diesel.url.expose_secret());
-        #[cfg(test)]
-        let database_pool = Pool::builder()
-            .connection_timeout(std::time::Duration::from_millis(2_000))
-            .build(connection_manager)?;
-        #[cfg(not(test))]
-        let database_pool = Pool::new(connection_manager)?;
-        let database_pool = Arc::new(database_pool);
-
+        let tera = serve.tera()?;
+        let database_pool = self.diesel.pool()?;
         let tls_server_configuration = self.ssl.into_server_configuration()?;
+        let mailer = self.mail.mailer()?;
+
+        let session_key = cookie::Key::generate();
+        let session_store = self.redis.session_storage()?;
 
         let config = TuskConfiguration {
             tera,
+            serve,
             www_domain,
             api_domain,
-            tera_templates,
-            static_files,
-            user_directories,
             database_pool,
-            session_configuration,
+            session_key,
+            session_store,
             tls_server_configuration,
-            ui_icon_filetype
+            ui_icon_filetype,
+            mailer,
+            email_contacts: contacts
         };
 
         Ok(config)
     }
 }
 
-/// Represents a configuration for the Redis session storage.
-#[derive(Clone)]
-pub struct SessionConfiguration {
-    redis_uri: String,
-    session_key: actix_web::cookie::Key,
-    session_lifecycle: actix_session::config::PersistentSession
-}
 /// Represents a configuration for the Tusk server.
 #[derive(Clone)]
 pub struct TuskConfiguration {
     tera: Arc<RwLock<Tera>>,
+    serve: tusk::serve::Serve,
     www_domain: String,
     api_domain: String,
-    tera_templates: PathBuf,
-    static_files: PathBuf,
-    user_directories: PathBuf,
     database_pool: Arc<Pool<ConnectionManager<PgConnection>>>,
-    session_configuration: SessionConfiguration,
+    session_key: cookie::Key,
+    session_store: RedisSessionStore,
     tls_server_configuration: rustls::ServerConfig,
-    ui_icon_filetype: String
+    ui_icon_filetype: String,
+    mailer: SmtpTransport,
+    email_contacts: tusk::contacts::Contacts
 }
 impl TuskConfiguration {
     /// Returns a configuration wrapped in `actix_web::web::Data` to store into the web server.
@@ -275,23 +279,32 @@ impl TuskConfiguration {
         &self.api_domain
     }
     /// Returns the path from which the Tera templates are loaded.
-    pub fn tera_templates(&self) -> &Path {
-        &self.tera_templates
+    pub fn tera_templates(&self) -> PathBuf {
+        self.serve.tera_templates()
     }
     /// Returns the path from which to serve static files.
-    pub fn static_files(&self) -> &Path {
-        &self.static_files
+    pub fn static_files(&self) -> PathBuf {
+        self.serve.static_files()
     }
     /// Returns the path where user files are stored.
-    pub fn user_directories(&self) -> &Path {
-        &self.user_directories
+    pub fn user_directories(&self) -> PathBuf {
+        self.serve.user_directories()
     }
     /// Returns the file extension for the UI icons.
     pub fn ui_icon_filetype(&self) -> &str {
         &self.ui_icon_filetype
     }
+    /// Sends the given message by email.
+    pub fn send_email(&self, message: &Message) -> TuskResult<Response> {
+        let response = self.mailer.send(message)?;
+        Ok(response)
+    }
+    /// Returns the email contacts relative to the server.
+    pub fn email_contacts(&self) -> &tusk::contacts::Contacts {
+        &self.email_contacts
+    }
     /// Returns a connection to the database.
-    pub fn database_connect(&self) -> TuskResult<PooledConnection<ConnectionManager<PgConnection>>> {
+    pub fn db(&self) -> TuskResult<PooledConnection<ConnectionManager<PgConnection>>> {
         let db_pool = self.database_pool.get()?;
         Ok(db_pool)
     }
@@ -299,7 +312,7 @@ impl TuskConfiguration {
     pub fn apply_migrations(&self) -> TuskResult<()> {
         const MIGRATIONS: diesel_migrations::EmbeddedMigrations = embed_migrations!("../migrations");
 
-        let mut db_connection = self.database_connect()?;
+        let mut db_connection = self.db()?;
 
         let pending_migrations_count = db_connection.pending_migrations(MIGRATIONS)
             .map_err(TuskError::from_migration_error)?
@@ -337,19 +350,13 @@ impl TuskConfiguration {
 
         context
     }
-    /// Builds and returns a Redis connection to store the session cookies.
-    pub async fn redis_store(&self) -> actix_session::storage::RedisSessionStore {
-        actix_session::storage::RedisSessionStore::new(&self.session_configuration.redis_uri)
-            .await
-            .expect("Redis connection")
-    }
-    /// Returns the current session key.
-    pub fn session_key(&self) -> actix_web::cookie::Key {
-        self.session_configuration.session_key.clone()
-    }
-    /// Returns the current session life cycle.
-    pub fn session_lifecycle(&self) -> actix_session::config::PersistentSession {
-        self.session_configuration.session_lifecycle.clone()
+    /// Returns a new session middleware constructed from the internal configuration.
+    pub fn session_middleware(&self) -> SessionMiddleware<RedisSessionStore> {
+        SessionMiddleware::builder(self.session_store.clone(), self.session_key.clone())
+            .session_lifecycle(PersistentSession::default()
+                .session_ttl(cookie::time::Duration::minutes(15))
+                .session_ttl_extension_policy(TtlExtensionPolicy::OnEveryRequest)
+            ).build()
     }
     /// Returns the current TLS configuration.
     pub fn tls_config(&self) -> rustls::ServerConfig {
@@ -358,19 +365,23 @@ impl TuskConfiguration {
     /// Checks whether all the users with role `storage` actually have a storage, and logs
     /// a warning in case not.
     pub fn check_user_directories(&self) -> TuskResult<usize> {
-        let mut db_connection = self.database_connect()?;
+        let mut db_connection = self.db()?;
         let mut count = 0;
 
-        let directory_users = crate::resources::User::read_by_role_name(&mut db_connection, "directory")?;
-        let directory_path = PathBuf::from(&self.user_directories);
+        let directory_users = db_connection.transaction(|db_connection| {
+            crate::resources::Role::from_name(db_connection, "directory")?
+                .ok_or(DieselError::NotFound)?
+                .users(db_connection)
+        })?;
+        let directory_path = self.user_directories();
 
         log::info!("Checking directories in `{}`", directory_path.display());
         for dir_user in directory_users {
             let mut user_dir_path = directory_path.clone();
-            user_dir_path.push(dir_user.username());
+            user_dir_path.push(dir_user.id().to_string());
             if !user_dir_path.exists() {
                 count += 1;
-                log::warn!("Missing storage for user `{}`", dir_user.username());
+                log::warn!("Missing storage for user `{}`", dir_user.email());
             }
         }
 
@@ -378,6 +389,23 @@ impl TuskConfiguration {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::config::TuskConfigurationFile;
+
+    #[test]
+    fn test_basic_derives() {
+        let tusk_file = TuskConfigurationFile::import_from_locations(["../tusk-server/tusk-test.toml"])
+            .unwrap();
+
+        // It clones.
+        let tusk_file = tusk_file.clone();
+        // It debugs.
+        let _dbg_string = format!("{tusk_file:?}");
+    }
+}
+
+/*
 /// Contains a test configuration for unit testing this and all the other related crates.
 ///
 /// # Configuration
@@ -397,9 +425,9 @@ impl TuskConfiguration {
 /// - `dummy`, with role `user`
 /// - `test`, with roles `storage`, `user`
 /// - `user`, with roles `user`
-#[cfg(any(feature = "test_utils", test))]
+//#[cfg(any(feature = "test_utils", test))]
+#[cfg(test)]
 pub static TEST_CONFIGURATION: once_cell::sync::Lazy<TuskConfiguration> = once_cell::sync::Lazy::new(|| {
-    use diesel::{Connection};
     use log::LevelFilter;
 
     use crate::resources::{Role, User};
@@ -430,29 +458,69 @@ pub static TEST_CONFIGURATION: once_cell::sync::Lazy<TuskConfiguration> = once_c
 
     config.apply_migrations().expect("database migration");
 
-    let mut db_connection = config.database_connect()
+    let mut db_connection = config.db()
         .expect("database connection");
 
-    User::create(&mut db_connection, "test", Secret::new(String::from("test#7U5c"))).expect("database connection");
-    User::create(&mut db_connection, "dummy", Secret::new(String::from("dummy#aW74Qz7"))).expect("database connection");
-    User::create(&mut db_connection, "admin", Secret::new(String::from("admin#f9E5"))).expect("database connection");
-    User::create(&mut db_connection, "user", Secret::new(String::from("user#vX78"))).expect("database connection");
+    fn create_user(db_connection: &mut PgConnection, index: u64, email: &str, display: &str, password: &str) -> User {
+        use diesel::prelude::*;
+        use crate::schema::user;
 
-    Role::assign(&mut db_connection, "admin").to("admin").expect("role assignment");
+        let id = Uuid::from_u64_pair(0, index);
+        let password = bcrypt::hash(password, bcrypt::DEFAULT_COST)
+            .unwrap();
 
-    let mut directory_role_assign = Role::assign(&mut db_connection, "directory");
-    directory_role_assign.to("admin").expect("role assignment");
-    directory_role_assign.to("test").expect("role assignment");
-    directory_role_assign.to("user").expect("role assignment");
+        diesel::insert_into(user::table)
+            .values(
+                (user::user_id.eq(id), user::email.eq(email), user::display.eq(display), user::password.eq(&password))
+            ).get_result(db_connection)
+            .expect("Database connection")
+    }
 
-    let mut user_role_assign = Role::assign(&mut db_connection, "user");
-    user_role_assign.to("admin").expect("role assignment");
-    user_role_assign.to("test").expect("role assignment");
-    user_role_assign.to("user").expect("role assignment");
-    user_role_assign.to("dummy").expect("role assignment");
+    let _user_test = create_user(&mut db_connection, 1, "test@example.com", "Test", "test#7U5c");
+    let user_dummy = create_user(&mut db_connection, 2, "dummy@example.com", "Dummy", "dummy#aW74Qz7");
+    let user_admin = create_user(&mut db_connection, 3, "admin@example.com", "Admin", "admin#f9E5");
+    let user_user = create_user(&mut db_connection, 4, "user@example.com", "User", "user#vX78");
+
+    let user_test = User::from_id(&mut db_connection, Uuid::from_u64_pair(0, 1))
+        .expect("User");
+    assert_eq!(user_test.id().to_string(), "00000000-0000-0000-0000-000000000001".to_owned());
+
+    Role::from_name(&mut db_connection, "admin")
+        .expect("Role")
+        .expect("Existing role")
+        .assign_to(&mut db_connection, &user_admin)
+        .expect("Role assignment");
+
+    let role_directory = Role::from_name(&mut db_connection, "directory")
+        .expect("Role")
+        .expect("Existing role");
+    role_directory.assign_to(&mut db_connection, &user_admin).expect("Role assignment");
+    role_directory.assign_to(&mut db_connection, &user_test).expect("Role assignment");
+    role_directory.assign_to(&mut db_connection, &user_user).expect("Role assignment");
+
+    let role_user = Role::from_name(&mut db_connection, "user")
+        .expect("Role")
+        .expect("Existing role");
+    role_user.assign_to(&mut db_connection, &user_admin).expect("Role assignment");
+    role_user.assign_to(&mut db_connection, &user_dummy).expect("Role assignment");
+    role_user.assign_to(&mut db_connection, &user_test).expect("Role assignment");
+    role_user.assign_to(&mut db_connection, &user_user).expect("Role assignment");
 
     config
 });
+
+/// Contains the UUID for the test user named `test@example.com`.
+#[cfg(any(feature = "test_utils", test))]
+pub const TEST_USER_TEST_UUID: Uuid = Uuid::from_u64_pair(0, 1);
+/// Contains the UUID for the test user named `dummy@example.com`.
+#[cfg(any(feature = "test_utils", test))]
+pub const TEST_USER_DUMMY_UUID: Uuid = Uuid::from_u64_pair(0, 2);
+/// Contains the UUID for the test user named `admin@example.com`.
+#[cfg(any(feature = "test_utils", test))]
+pub const TEST_USER_ADMIN_UUID: Uuid = Uuid::from_u64_pair(0, 3);
+/// Contains the UUID for the test user named `user@example.com`.
+#[cfg(any(feature = "test_utils", test))]
+pub const TEST_USER_USER_UUID: Uuid = Uuid::from_u64_pair(0, 4);
 
 #[cfg(test)]
 pub mod test {
@@ -561,4 +629,4 @@ pub mod test {
 
         assert_eq!(users_without_directory, 1);
     }
-}
+}*/

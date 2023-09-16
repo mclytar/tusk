@@ -6,3 +6,4 @@ members = [
     "tusk-server",
     "tusk-admin"
 ]
+resolver = "2"

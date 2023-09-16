@@ -12,11 +12,16 @@ path = "src/main.rs"
 [dependencies]
 actix-web = "4"
 clap = { version = "4", features = ["derive"] }
+clap-verbosity-flag = "2"
 console = "0.15"
 dialoguer = "0.10"
+env_logger = "0.10"
 indicatif = "0.17"
+log = { version = "0.4", features = ["std", "serde"] }
 secrecy = "0.8"
+tabled = { version = "0.12", features = ["color"] }
 tusk-core = { path = "../tusk-core" }
+uuid = { version = "1", features = ["serde", "v4"] }
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.26"

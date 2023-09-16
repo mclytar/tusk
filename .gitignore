@@ -4,3 +4,4 @@ target/
 db_url
 cert.pem
 key.pem
+tusk-server/test_srv

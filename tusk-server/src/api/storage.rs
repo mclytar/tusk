@@ -29,25 +29,22 @@
 //!
 //! The same rules as in the Access section apply.
 
-use std::future::Future;
 use std::io::{ErrorKind};
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 use std::time::{Duration, SystemTime};
 use actix_files::NamedFile;
 use actix_multipart::form::json::Json;
 use actix_multipart::form::MultipartForm;
 use actix_multipart::form::tempfile::TempFile;
-use actix_session::Session;
 use actix_web::{FromRequest, HttpRequest, HttpResponse};
 use actix_web::dev::Payload;
 use actix_web::http::header;
-use serde::{Deserialize, Serializer};
+use path_clean::clean;
+use serde::{Deserialize, Serialize, Serializer};
 use serde::ser::SerializeMap;
-use tusk_core::config::{TuskData};
+use tusk_core::config::{BoxedAsyncBlock, Tusk};
+use tusk_core::error::{HttpOkOr, TuskError, TuskHttpResult, TuskResult};
 use tusk_derive::rest_resource;
-use crate::error::{HttpError, HttpIfError, HttpOkOr, HttpResult, WrapResult};
-use crate::api::session::{SessionRead};
 
 /// Interprets the specified integer into a signed distance, in seconds, from
 /// [`SystemTime::UNIX_EPOCH`], and converts it into a [`SystemTime`].
@@ -65,7 +62,6 @@ pub fn system_type_from_epoch_delta(delta: i64) -> SystemTime {
 #[derive(Clone, Debug)]
 pub struct PathInfo {
     depth: usize,
-    req: HttpRequest,
     root: PathBuf,
     path: PathBuf
 }
@@ -82,10 +78,10 @@ impl PathInfo {
     /// If the storage already exists, this function returns an HTTP error 409 `CONFLICT`.
     ///
     /// Finally, for any other error, the function returns 500 `INTERNAL SERVER ERROR`.
-    pub fn create_dir(&self, data: CreateDirectoryData) -> Result<Self, HttpError> {
+    pub fn create_dir(&self, data: CreateDirectoryData) -> TuskResult<Self> {
         let name = data.name();
-        if name.contains(|c| c == '/' || c == '\\') || name == "." || name == "..." {
-            return Err(HttpError::bad_request());
+        if name.contains(|c| c == '/' || c == '\\') || name == "." || name == ".." {
+            return TuskError::bad_request().bail();
         }
 
         let mut path = self.path.clone();
@@ -98,9 +94,10 @@ impl PathInfo {
                 child.depth += 1;
                 child
             }),
-            Err(e) if e.kind() == ErrorKind::AlreadyExists => Err(HttpError::conflict()),
-            Err(e) if e.kind() == ErrorKind::NotFound => Err(HttpError::not_found()),
-            Err(_) => Err(HttpError::internal_server_error())
+            Err(e) if e.kind() == ErrorKind::AlreadyExists => TuskError::conflict().bail(),
+            Err(e) if e.kind() == ErrorKind::NotFound => TuskError::not_found().bail(),
+            Err(e) if e.kind() == ErrorKind::PermissionDenied => TuskError::forbidden().bail(),
+            Err(_) => TuskError::internal_server_error().bail()
         }
     }
 
@@ -116,33 +113,35 @@ impl PathInfo {
     /// If the storage already exists, this function returns an HTTP error 409 `CONFLICT`.
     ///
     /// Finally, for any other error, the function returns 500 `INTERNAL SERVER ERROR`.
-    pub fn create_file(&self, data: CreateFileData) -> Result<Self, HttpError> {
+    pub fn create_file(&self, data: CreateFileData) -> TuskResult<Self> {
         let payload = data.into_payload();
         let name = payload.file_name
             .or_bad_request()?;
-        if name.contains(|c| c == '/' || c == '\\') || name == "." || name == "..." {
-            return Err(HttpError::bad_request());
+        if name.contains(|c| c == '/' || c == '\\') || name == "." || name == ".." {
+            return TuskError::bad_request().bail();
         }
 
         let mut path = self.path.clone();
         path.push(name);
 
-        payload.file.persist(&path)
-            .or_internal_server_error()
-            .with_log_error()?;
-
-        Ok({
-            let mut child = self.clone();
-            child.path = path;
-            child.depth += 1;
-            child
-        })
+        match payload.file.persist_noclobber(&path) {
+            Ok(_) => Ok({
+                let mut child = self.clone();
+                child.path = path;
+                child.depth += 1;
+                child
+            }),
+            Err(e) if e.error.kind() == ErrorKind::AlreadyExists => TuskError::conflict().bail(),
+            Err(e) if e.error.kind() == ErrorKind::NotFound => TuskError::not_found().bail(),
+            Err(e) if e.error.kind() == ErrorKind::PermissionDenied => TuskError::forbidden().bail(),
+            Err(e) => TuskError::internal_server_error().with_error(e).log_error().bail()
+        }
     }
 
     /// Returns the information relative to the path.
     ///
     /// See [`StoragePathRead::from_path`] for more information.
-    pub fn info(&self) -> Result<StoragePathRead, HttpError> {
+    pub fn info(&self) -> TuskResult<StoragePathRead> {
         StoragePathRead::from_path(&self.path)
     }
 
@@ -150,26 +149,18 @@ impl PathInfo {
     ///
     /// # Errors
     /// If the path does not exist, this function returns an HTTP error 404 `NOT FOUND`.
-    pub fn delete(self) -> Result<(), HttpError> {
-        if self.depth == 0 { return Err(HttpError::not_found()); }
+    pub fn delete(self) -> TuskResult<()> {
+        if self.depth == 0 { return TuskError::forbidden().bail(); }
         if self.is_directory() {
-            std::fs::remove_dir_all(&self.path)
-                .or_not_found()?;
+            std::fs::remove_dir_all(&self.path)?;
         } else {
-            std::fs::remove_file(&self.path)
-                .or_not_found()?;
+            std::fs::remove_file(&self.path)?;
         }
         Ok(())
     }
 
     /// Returns `true` if this path points to a directory and `false` otherwise.
-    pub fn is_directory(&self) -> bool {
-        self.path.is_dir()
-    }
-    /// Returns the internal [`HttpRequest`].
-    pub fn request(&self) -> &HttpRequest {
-        &self.req
-    }
+    pub fn is_directory(&self) -> bool { self.path.is_dir() }
     /// Returns a request path relative to this path.
     pub fn request_path(&self) -> String {
         let result: Vec<std::borrow::Cow<str>> = self.path.iter()
@@ -188,15 +179,13 @@ impl PathInfo {
     ///
     /// If the path points to something that is not a directory, this function returns an HTTP
     /// error 409 `CONFLICT`.
-    pub fn list_children(&self) -> Result<Vec<StoragePathRead>, HttpError> {
-        if !self.path.is_dir() { return Err(HttpError::conflict()); }
+    pub fn list_children(&self) -> TuskResult<Vec<StoragePathRead>> {
+        if !self.path.is_dir() { return TuskError::conflict().bail(); }
 
-        let result = std::fs::read_dir(&self.path)
-            .or_not_found()?
+        let result = std::fs::read_dir(&self.path)?
             .filter_map(|dir| dir.ok())
             .map(|dir| StoragePathRead::from_path(dir.path()))
-            .collect::<Result<Vec<StoragePathRead>, _>>()
-            .or_not_found()?;
+            .collect::<Result<Vec<StoragePathRead>, _>>()?;
 
         Ok(result)
     }
@@ -207,56 +196,53 @@ impl AsRef<Path> for PathInfo {
     }
 }
 impl FromRequest for PathInfo {
-    type Error = HttpError;
-    type Future = Pin<Box<dyn Future<Output=Result<Self, Self::Error>>>>;
+    type Error = TuskError;
+    type Future = BoxedAsyncBlock<Self>;
 
-    fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
-        let req = req.to_owned();
-        let tusk = TuskData::from_request(&req, payload);
-        let session = Session::from_request(&req, payload);
-        let queried_path = req.match_info()
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let tusk_future = Tusk::extract(req);
+        let queried_path:PathBuf = req.match_info()
             .query("filename")
-            .to_owned();
+            .into();
 
         Box::pin(async move {
-            let tusk = tusk.await
-                .or_internal_server_error()?;
-            let session: SessionRead = session.await
-                .or_internal_server_error()?
-                .try_into()?;
-            let root = tusk.user_directories()
-                .canonicalize()
-                .or_internal_server_error()
-                .with_log_error()?;
-            let initiator = session.username().to_owned();
-
-            // Return early if the user is not authorized.
-            if !queried_path.starts_with(".public/") && !queried_path.starts_with(&format!("{initiator}/")) {
-                log::info!("User `{initiator}` tried to access forbidden path `{queried_path}`");
-                return Err(HttpError::forbidden());
-            }
-
-            // Construct physical path.
+            let tusk = tusk_future.await?;
+            let mut db = tusk.db()?;
+            let root = tusk.config()
+                .user_directories()
+                .canonicalize()?;
+            let queried_path = clean(queried_path);
+            let initiator = tusk.authenticate()?
+                .user(&mut db)?;
             let mut path = root.clone();
-            path.push(queried_path);
-            path = path.canonicalize()
-                .or_not_found()?;
 
-            // Block any attempt of a path traversal attack.
-            if !path.starts_with(&root) {
-                return Err(HttpError::not_found());
+            if !initiator.roles(&mut db)?
+                .iter()
+                .any(|r| r.name() == "directory") {
+                return TuskError::forbidden().bail();
             }
+
+            // Return early if the user is not authorized;
+            // construct physical path otherwise.
+            let user_root = format!("{}/", initiator.id());
+            if queried_path.starts_with(".public/") {
+                path.push(&queried_path);
+            } else if queried_path.starts_with(&user_root) {
+                path.push(&queried_path);
+            } else {
+                log::info!("User `{initiator}` tried to access forbidden path `{}`", queried_path.display());
+                return TuskError::forbidden().bail();
+            };
 
             // Get the depth to the path, relative to the user root.
-            let mut depth = path.ancestors().count() - root.ancestors().count();
+            let mut depth = queried_path.iter().count();
             if depth == 0 {
-                return Err(HttpError::forbidden());
+                return TuskError::forbidden().bail();
             }
             depth -= 1;
 
             Ok(PathInfo {
                 depth,
-                req,
                 root,
                 path
             })
@@ -265,8 +251,9 @@ impl FromRequest for PathInfo {
 }
 
 /// Describes the newly created item as a file or a storage.
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize)]
-pub enum CreatePathKind {
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PathKind {
     /// The newly created item is a file.
     File,
     /// The newly created item is a storage.
@@ -275,7 +262,7 @@ pub enum CreatePathKind {
 /// Contains the metadata relative to an uploaded file or storage.
 #[derive(Debug, Deserialize)]
 pub struct CreatePathAttributes {
-    kind: CreatePathKind,
+    kind: PathKind,
     name: String,
     created: Option<i64>,
     last_access: Option<i64>,
@@ -300,17 +287,17 @@ impl CreatePathAttributes {
 /// This can be specialized into a [`CreateFileData`] or a [`CreateDirectoryData`] structure depending
 /// on the type of uploaded resource.
 #[derive(Debug, MultipartForm)]
-struct CreatePathData {
+pub struct CreatePathData {
     metadata: Option<Json<CreatePathAttributes>>,
     payload: Option<TempFile>
 }
 impl CreatePathData {
     /// Creates a new `StoragePathCreate` of type `Directory` with the given name.
-    #[cfg(test)]
+    #[cfg(feature = "test_utils")]
     pub fn new_directory<S: AsRef<str>>(name: S) -> CreatePathData {
         CreatePathData {
             metadata: Some(Json(CreatePathAttributes {
-                kind: CreatePathKind::Directory,
+                kind: PathKind::Directory,
                 name: name.as_ref().to_string(),
                 created: None,
                 last_access: None,
@@ -320,7 +307,7 @@ impl CreatePathData {
         }
     }
     /// Creates a new `StoragePathCreate` of type `File` with the given name.
-    #[cfg(test)]
+    #[cfg(feature = "test_utils")]
     pub fn new_file<S: AsRef<str>, C: Into<&'static [u8]>>(name: S, contents: C) -> CreatePathData {
         use std::io::Write;
 
@@ -328,7 +315,7 @@ impl CreatePathData {
         file.write(contents.into()).expect("file to be written");
         CreatePathData {
             metadata: Some(Json(CreatePathAttributes {
-                kind: CreatePathKind::File,
+                kind: PathKind::File,
                 name: name.as_ref().to_string(),
                 created: None,
                 last_access: None,
@@ -349,7 +336,7 @@ impl CreatePathData {
             Some(metadata) => metadata,
             None => return false
         };
-        metadata.kind == CreatePathKind::Directory
+        metadata.kind == PathKind::Directory
     }
     /// Returns `true if the uploaded resource is a file and `false` otherwise.
     pub fn is_file(&self) -> bool {
@@ -358,7 +345,7 @@ impl CreatePathData {
             Some(metadata) => metadata,
             None => return false
         };
-        metadata.kind == CreatePathKind::File
+        metadata.kind == PathKind::File
     }
 }
 /// Represents the CRUD **Create** structure relative to the `/storage` REST resource.
@@ -375,20 +362,20 @@ impl CreateFileData {
     }
 }
 impl TryFrom<CreatePathData> for CreateFileData {
-    type Error = HttpError;
+    type Error = TuskError;
 
     fn try_from(value: CreatePathData) -> Result<Self, Self::Error> {
-        if value.payload.is_none() { return Err(HttpError::bad_request()); }
+        if value.payload.is_none() { return TuskError::bad_request().bail(); }
         let metadata = match value.metadata {
             Some(metadata) => metadata,
-            None => return Err(HttpError::bad_request())
+            None => return TuskError::bad_request().bail()
         };
-        if metadata.kind != CreatePathKind::File {
-            return Err(HttpError::bad_request());
+        if metadata.kind != PathKind::File {
+            return TuskError::bad_request().bail();
         }
         match value.payload {
             Some(payload) => Ok(CreateFileData { payload }),
-            None => Err(HttpError::bad_request())
+            None => TuskError::bad_request().bail()
         }
     }
 }
@@ -406,16 +393,16 @@ impl CreateDirectoryData {
     }
 }
 impl TryFrom<CreatePathData> for CreateDirectoryData {
-    type Error = HttpError;
+    type Error = TuskError;
 
     fn try_from(value: CreatePathData) -> Result<Self, Self::Error> {
-        if value.payload.is_some() { return Err(HttpError::bad_request()); }
+        if value.payload.is_some() { return TuskError::bad_request().bail(); }
         let Json(directory_item_create) = match value.metadata {
             Some(metadata) => metadata,
-            None => return Err(HttpError::bad_request())
+            None => return TuskError::bad_request().bail()
         };
-        if directory_item_create.kind != CreatePathKind::Directory {
-            Err(HttpError::bad_request())
+        if directory_item_create.kind != PathKind::Directory {
+            TuskError::bad_request().bail()
         } else {
             Ok(CreateDirectoryData { name: directory_item_create.name })
         }
@@ -439,6 +426,7 @@ enum StoragePathReadKind {
     None
 }
 /// Represents the CRUD **Read** structure relative to the `/storage` REST resource.
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StoragePathRead {
     filename: String,
     kind: StoragePathReadKind,
@@ -448,7 +436,7 @@ pub struct StoragePathRead {
 }
 impl StoragePathRead {
     /// Creates a new `DirectoryRead` item by loading the metadata relative to the given `path`.
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<StoragePathRead, HttpError> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> TuskResult<StoragePathRead> {
         let path = path.as_ref();
         let attr = path.metadata()
             .or_not_found()?;
@@ -508,7 +496,7 @@ impl serde::Serialize for StoragePathRead {
     }
 }
 impl TryFrom<&Path> for StoragePathRead {
-    type Error = HttpError;
+    type Error = TuskError;
 
     fn try_from(value: &Path) -> Result<Self, Self::Error> {
         StoragePathRead::from_path(value)
@@ -522,39 +510,30 @@ impl TryFrom<&Path> for StoragePathRead {
 pub struct StorageResource;
 #[rest_resource("/storage/{filename:.*}")]
 impl StorageResource {
-    async fn get(path: PathInfo) -> HttpResult {
+    async fn get(path: PathInfo, req: HttpRequest) -> TuskHttpResult {
         if path.is_directory() {
             let children = path.list_children()?;
 
-            HttpResponse::Ok()
-                .json(children)
-                .wrap_ok()
+            Ok(HttpResponse::Ok().json(children))
         } else {
-            NamedFile::open(&path)
-                .or_internal_server_error()
-                .with_log_error()?
-                .into_response(path.request())
-                .wrap_ok()
+            Ok(NamedFile::open(&path)?.into_response(&req))
         }
     }
 
-    async fn delete(path: PathInfo) -> HttpResult {
+    async fn delete(path: PathInfo) -> TuskHttpResult {
         path.delete()?;
 
-        HttpResponse::Ok()
-            .finish()
-            .wrap_ok()
+        Ok(HttpResponse::NoContent().finish())
     }
 
-    async fn post(path: PathInfo, MultipartForm(data): MultipartForm<CreatePathData>) -> HttpResult {
-        if data.is_directory() {
+    async fn post(path: PathInfo, MultipartForm(data): MultipartForm<CreatePathData>) -> TuskHttpResult {
+        let response = if data.is_directory() {
             let directory_data: CreateDirectoryData = data.try_into()?;
             let child = path.create_dir(directory_data)?;
             let attr = child.info()?;
             HttpResponse::Created()
                 .insert_header((header::LOCATION, format!("/v1/storage/{}/", child.request_path())))
                 .json(attr)
-                .wrap_ok()
         } else if data.is_file() {
             let file_data: CreateFileData = data.try_into()?;
             let child = path.create_file(file_data)?;
@@ -562,260 +541,30 @@ impl StorageResource {
             HttpResponse::Created()
                 .insert_header((header::LOCATION, format!("/v1/storage/{}", child.request_path())))
                 .json(attr)
-                .wrap_ok()
         } else {
             HttpResponse::BadRequest()
                 .finish()
-                .wrap_ok()
-        }
+        };
+        Ok(response)
     }
 }
 
 #[cfg(test)]
-mod test {
-    use std::path::Path;
-    use actix_multipart::form::MultipartForm;
-    use actix_session::SessionExt;
-    use actix_web::{FromRequest, HttpRequest, ResponseError};
-    use actix_web::dev::{Payload, ServiceResponse};
-    use actix_web::http::{Method, StatusCode};
-    use actix_web::test::TestRequest;
-    use serde::Deserialize;
-    use tusk_core::config::TEST_CONFIGURATION;
-    use crate::api::{StorageResource};
-    use crate::api::storage::{PathInfo, CreatePathData};
+mod tests {
+    use std::time::{Duration, SystemTime};
+    use crate::api::storage::system_type_from_epoch_delta;
 
-    pub async fn create_request(method: Method, path: &str, user: Option<&str>) -> HttpRequest {
-        let tusk = TEST_CONFIGURATION.to_data();
-        let req = TestRequest::with_uri(&format!("/v1/storage/{path}"))
-            .method(method)
-            .app_data(tusk)
-            .param("filename", path.to_owned())
-            .to_http_request();
-        if let Some(user) = user {
-            req.get_session().insert("username", user)
-                .expect("Cookie set");
-        }
-        req
+    #[test]
+    fn test_system_type_from_epoch_delta() {
+        let time = system_type_from_epoch_delta(0);
+        assert_eq!(time, SystemTime::UNIX_EPOCH);
+
+        let time = system_type_from_epoch_delta(5);
+        assert_eq!(time, SystemTime::UNIX_EPOCH + Duration::from_secs(5));
+
+        let time = system_type_from_epoch_delta(-60);
+        assert_eq!(time, SystemTime::UNIX_EPOCH - Duration::from_secs(60));
     }
 
-    #[actix_web::test]
-    async fn read_file_from_user_directory() {
-        let req = create_request(Method::GET, "user/user.txt", Some("user")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
 
-        let resp = StorageResource::get(path).await
-            .expect("response");
-        let status = resp.status();
-        let body = actix_web::test::read_body(ServiceResponse::new(req, resp)).await;
-
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(&body, include_str!("../../srv/storage/user/user.txt"));
-    }
-
-    #[actix_web::test]
-    async fn read_file_from_public_directory() {
-        let req = create_request(Method::GET, ".public/public.txt", Some("user")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
-
-        let resp = StorageResource::get(path).await
-            .expect("response");
-        let status = resp.status();
-        let body = actix_web::test::read_body(ServiceResponse::new(req, resp)).await;
-
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(&body, include_str!("../../srv/storage/.public/public.txt"));
-    }
-
-    #[actix_web::test]
-    async fn cannot_access_other_user_directory() {
-        let req = create_request(Method::GET, "admin/admin.txt", Some("user")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect_err("Forbidden path");
-
-        assert_eq!(path.status_code(), StatusCode::FORBIDDEN);
-    }
-
-    #[actix_web::test]
-    async fn cannot_access_if_not_authenticated() {
-        let req = create_request(Method::GET, "user/user.txt", None).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect_err("Unauthorized path");
-
-        assert_eq!(path.status_code(), StatusCode::UNAUTHORIZED);
-    }
-
-    #[actix_web::test]
-    async fn cannot_access_if_does_not_exist() {
-        let req = create_request(Method::GET, "user/does_not_exist.txt", Some("user")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect_err("Non existent path");
-
-        assert_eq!(path.status_code(), StatusCode::NOT_FOUND);
-    }
-
-    #[actix_web::test]
-    async fn does_not_leak_existence_if_without_permissions() {
-        let req = create_request(Method::GET, "user/does_not_exist.txt", None).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect_err("Non existent path");
-
-        assert_eq!(path.status_code(), StatusCode::UNAUTHORIZED);
-
-        let req = create_request(Method::GET, "user/does_not_exist.txt", Some("admin")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect_err("Non existent path");
-
-        assert_eq!(path.status_code(), StatusCode::FORBIDDEN);
-    }
-
-    #[actix_web::test]
-    async fn read_directory_from_user_directory() {
-        let req = create_request(Method::GET, "user/", Some("user")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
-
-        #[derive(Clone, Debug, Deserialize)]
-        pub struct DirectoryItem {
-            filename: String,
-            kind: String,
-            size: Option<usize>,
-            children: Option<usize>,
-            #[allow(unused)] created: i64,
-            #[allow(unused)] last_access: i64,
-            #[allow(unused)] last_modified: i64
-        }
-
-        let resp = StorageResource::get(path).await
-            .expect("response");
-        let status = resp.status();
-        let body: Vec<DirectoryItem> = actix_web::test::read_body_json(ServiceResponse::new(req, resp)).await;
-
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(body.len(), 3);
-        assert_eq!(&body[0].filename, "folder_1");
-        assert_eq!(&body[0].kind, "directory");
-        assert!(&body[0].size.is_none());
-        assert_eq!(&body[0].children.unwrap(), &1);
-        assert_eq!(&body[1].filename, "folder_2");
-        assert_eq!(&body[1].kind, "directory");
-        assert!(&body[1].size.is_none());
-        assert_eq!(&body[1].children.unwrap(), &0);
-        assert_eq!(&body[2].filename, "user.txt");
-        assert_eq!(&body[2].kind, "file");
-        assert!(&body[2].size.is_some());
-        assert!(&body[2].children.is_none());
-    }
-
-    #[actix_web::test]
-    async fn create_and_delete_file() {
-        let req = create_request(Method::GET, "test/", Some("test")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
-
-        // Delete the old file in case it exists.
-        let _ = std::fs::remove_file("srv/storage/test/test_2.txt");
-        assert!(!Path::new("srv/storage/test/test_2.txt").exists());
-
-        // Send request to create a file.
-        let item = CreatePathData::new_file("test_2.txt", "Hi, I am a text.".as_bytes());
-        let resp = StorageResource::post(path, MultipartForm(item)).await
-            .expect("CREATED");
-
-        // Verify.
-        assert_eq!(resp.status(), StatusCode::CREATED);
-        assert_eq!(resp.headers().get("Location").unwrap(), "/v1/storage/test/test_2.txt");
-        assert_eq!(std::fs::read_to_string("srv/storage/test/test_2.txt").expect("a file"), "Hi, I am a text.");
-
-        // Send request to delete the file.
-        let req = create_request(Method::GET, "test/test_2.txt", Some("test")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
-        let resp = StorageResource::delete(path).await
-            .unwrap();
-
-        // Verify.
-        assert_eq!(resp.status(), StatusCode::OK);
-        assert!(!Path::new("srv/storage/test/test_2.txt").exists());
-    }
-
-    #[actix_web::test]
-    async fn create_and_delete_directory() {
-        let req = create_request(Method::GET, "test/", Some("test")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
-
-        // Delete the old folder in case it exists.
-        let _ = std::fs::remove_dir("srv/storage/test/test_dir/");
-        assert!(!Path::new("srv/storage/test/test_dir/").exists());
-
-        // Send request to create a folder.
-        let item = CreatePathData::new_directory("test_dir");
-        let resp = StorageResource::post(path, MultipartForm(item)).await
-            .expect("CREATED");
-
-        // Verify.
-        assert_eq!(resp.status(), StatusCode::CREATED);
-        assert_eq!(resp.headers().get("Location").unwrap(), "/v1/storage/test/test_dir/");
-        assert!(Path::new("srv/storage/test/test_dir/").is_dir());
-
-        // Send request to delete the folder.
-        let req = create_request(Method::GET, "test/test_dir/", Some("test")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
-        let resp = StorageResource::delete(path).await
-            .unwrap();
-
-        // Verify.
-        assert_eq!(resp.status(), StatusCode::OK);
-        assert!(!Path::new("srv/storage/test/test_dir/").exists());
-    }
-
-    #[actix_web::test]
-    async fn cannot_create_with_same_name() {
-        let req = create_request(Method::GET, "test/", Some("test")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
-
-        // Send request to create a folder.
-        let item = CreatePathData::new_directory("folder_2");
-        let resp = StorageResource::post(path, MultipartForm(item)).await
-            .expect_err("CONFLICT");
-
-        assert_eq!(resp.status_code(), StatusCode::CONFLICT);
-    }
-
-    #[actix_web::test]
-    async fn cannot_delete_user_root() {
-        let req = create_request(Method::GET, "admin/", Some("admin")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect("Valid path");
-
-        // Send request to delete a directory.
-        let resp = StorageResource::delete(path).await
-            .unwrap_err();
-
-        assert_eq!(resp.status_code(), StatusCode::NOT_FOUND);
-    }
-
-    #[actix_web::test]
-    async fn cannot_access_root() {
-        let req = create_request(Method::GET, "", Some("admin")).await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect_err("Invalid path");
-
-        assert_eq!(path.status_code(), StatusCode::FORBIDDEN);
-    }
-
-    #[actix_web::test]
-    async fn cannot_perform_path_traversal() {
-        let req = create_request(Method::GET, "user/../../other_file.txt", Some("user"))
-            .await;
-        let path = PathInfo::from_request(&req, &mut Payload::None).await
-            .expect_err("Invalid path");
-
-        assert_eq!(path.status_code(), StatusCode::NOT_FOUND);
-    }
 }

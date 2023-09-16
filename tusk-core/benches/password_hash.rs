@@ -6,10 +6,10 @@ use tusk_core::config::TEST_CONFIGURATION;
 use tusk_core::resources::User;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let mut db_connection = TEST_CONFIGURATION.database_connect()
+    let mut db_connection = TEST_CONFIGURATION.db()
         .expect("database connection");
 
-    let user = User::read_by_username(&mut db_connection, "user").expect("user");
+    let user = User::from_email(&mut db_connection, "user").expect("user");
 
     c.bench_function("verify against the real password", |b| b.iter(|| {
         let s: String = rand::thread_rng()

@@ -6,17 +6,13 @@ use systemd_journal_logger::JournalLog;
 
 use tusk_core::error::TuskResult;
 
-/// Runs the server.
-pub fn run() -> TuskResult<()> {
-    JournalLog::default().install()
-        .expect("a functioning logger");
-    log::set_max_level(LevelFilter::Info);
+/// Starts the system logger.
+pub fn start_logger() {
+    JournalLog::default().install().unwrap();
+}
 
-    let (server, tusk) = crate::server_spawn()?;
-
-    daemon::notify(false, [(daemon::STATE_READY, "1")].iter())?;
-
-    // Drop privileges!
+/// Drops the privileges of the process.
+pub fn drop_privileges() -> TuskResult<()> {
     match nix::unistd::Group::from_name("tusk")? {
         Some(group) => nix::unistd::setgid(group.gid),
         None => Err(nix::Error::last())
@@ -25,9 +21,20 @@ pub fn run() -> TuskResult<()> {
         Some(user) => nix::unistd::setuid(user.uid),
         None => Err(nix::Error::last())
     }?;
+}
+
+/// Runs the server.
+pub fn run() -> TuskResult<()> {
+    let tusk = crate::spawn_tusk()?;
+    let server = crate::spawn_server(&tusk)?;
+
+    daemon::notify(false, [(daemon::STATE_READY, "1")].iter())?;
+
+    drop_privileges()?;
 
     let _w = super::spawn_watcher(tusk);
 
-    crate::server_run(server)?;
+    crate::run_server(server)?;
+
     Ok(())
 }

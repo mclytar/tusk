@@ -6,68 +6,38 @@
 //! in both cases, after the setup, the executable runs as a service/daemon in background, logging
 //! to the system logger.
 
-pub mod api;
-pub mod error;
-pub mod gui;
-pub mod os;
-
-use actix_session::SessionMiddleware;
-use actix_web::{App, guard, HttpServer, web};
-use actix_web::middleware::Logger;
-
+use clap::Parser;
+use log::LevelFilter;
 use tusk_core::error::TuskResult;
-use tusk_core::config::{TuskConfigurationFile, TuskData};
+use tusk_server::{os, run_server, spawn_server, spawn_tusk, spawn_watcher};
 
-fn main() {
-    if let Err(e) = os::run() {
-        log::error!("{e}");
+#[derive(Debug, Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[clap(long)]
+    cli: bool
+}
+
+fn main() -> TuskResult<()> {
+    let args = Args::parse();
+
+    if args.cli {
+        env_logger::builder()
+            .filter_level(LevelFilter::Info)
+            .init();
+
+        let tusk = spawn_tusk()?;
+        let server = spawn_server(&tusk)?;
+        let _w = spawn_watcher(&tusk);
+
+        os::drop_privileges()?;
+
+        run_server(server)?;
+    } else {
+        os::start_logger();
+
+        os::run()?;
     }
-}
 
-/// Spawns a new Actix server without activating it.
-///
-/// To activate the server, simply use `.await` on the `Ok()` result.
-///
-/// # Error
-///
-/// This function may return an error.
-/// The most common causes are:
-/// - The configuration file cannot be found, cannot be read, has an invalid format or has missing items.
-/// - TODO
-pub fn server_spawn() -> TuskResult<(actix_web::dev::Server, TuskData)> {
-    let tusk = TuskConfigurationFile::import_from_default_locations()?
-        .into_tusk()?;
-    log::info!("Configuration loaded");
-    let redis_store = actix_web::rt::System::new().block_on(tusk.redis_store());
-    log::info!("Connected to Redis ");
-
-    tusk.apply_migrations()?;
-    tusk.check_user_directories()?;
-    let config = tusk.tls_config();
-
-    let data = tusk.to_data();
-    let app_data = data.clone();
-
-    let server = HttpServer::new(move || App::new()
-        .app_data(app_data.clone())
-        .wrap(SessionMiddleware::builder(redis_store.clone(), tusk.session_key())
-            .session_lifecycle(tusk.session_lifecycle())
-            .cookie_secure(false)
-            .build()
-        ).wrap(Logger::default())
-        .service(web::scope("/v1")
-            .guard(guard::Host(tusk.api_domain()))
-            .configure(|cfg| api::configure(cfg, &tusk))
-        ).service(web::scope("")
-            .guard(guard::Host(tusk.www_domain()))
-            .configure(|cfg| gui::configure(cfg, &tusk))
-    )).bind_rustls(("0.0.0.0", 443), config)?
-        .run();
-
-    Ok((server, data))
-}
-
-#[actix_web::main]
-async fn server_run(server: actix_web::dev::Server) -> std::io::Result<()> {
-    server.await
+    Ok(())
 }

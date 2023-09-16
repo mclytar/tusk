@@ -7,12 +7,16 @@ edition = "2021"
 
 [dependencies]
 actix-session = { version = "0.7", features = ["cookie-session", "redis-rs-tls-session"] }
-actix-web = "4"
+actix-test = { version = "0.1", optional = true }
+actix-web = { version = "4", features = ["rustls"] }
+anyhow = "1"
 bcrypt = { version = "0.14", features = ["zeroize"] }
 diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
 diesel_migrations = "2"
+lettre = "0.10"
 log = { version = "0.4", features = ["std", "serde"] }
 r2d2 = "0.8"
+rand = "0.8"
 rustls = "0.20.8"
 rustls-pemfile = "1"
 secrecy = { version = "0.8.0", features = ["serde"] }
@@ -25,7 +29,6 @@ once_cell = { version = "1.18", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-rand = "0.8"
 serde_json = "1.0"
 serde_test = "1.0"
 
@@ -34,7 +37,7 @@ name = "password_hash"
 harness = false
 
 [features]
-test_utils = ["dep:env_logger", "dep:once_cell"]
+test_utils = ["dep:env_logger", "dep:once_cell", "dep:actix-test"]
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.26"
