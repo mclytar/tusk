@@ -21,6 +21,7 @@ pub fn drop_privileges() -> TuskResult<()> {
         Some(user) => nix::unistd::setuid(user.uid),
         None => Err(nix::Error::last())
     }?;
+    Ok(())
 }
 
 /// Runs the server.
@@ -32,7 +33,7 @@ pub fn run() -> TuskResult<()> {
 
     drop_privileges()?;
 
-    let _w = super::spawn_watcher(tusk);
+    let _w = crate::spawn_watcher(tusk);
 
     crate::run_server(server)?;
 
