@@ -183,8 +183,8 @@ impl UserAddParameters {
         let tusk = TuskConfigurationFile::import_from_default_locations()?
             .into_tusk()?;
         let mut db_connection = tusk.db()?;
-        let server_email = "noreply@localhost";
-        let server_support_email = "support@localhost";
+        let server_email = tusk.email_contacts().noreply.as_str();
+        let server_support_email = tusk.email_contacts().support.as_str();
         let server_address = tusk.www_domain();
 
         let email = self.email();
