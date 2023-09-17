@@ -152,7 +152,7 @@
                 return;
             }
 
-            let data = JSON.stringify({ "password": form["password_new"].value, "proof": {{ get["token"] | json_encode }}, "proof_type": "token" })
+            let data = JSON.stringify({ "password": form["password_new"].value, "proof": "{{ get["token"] }}", "proof_type": "token" })
 
             fetch(`/v1/users/${document['username']}`, {
                 method: "PATCH",
