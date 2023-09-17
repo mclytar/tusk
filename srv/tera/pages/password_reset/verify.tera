@@ -152,10 +152,10 @@
                 return;
             }
 
-            let data = JSON.stringify({ "password": form["password_new"].value, "proof": "{{ get["token"] }}", "proof_type": "token" })
+            let data = JSON.stringify({ "email": "{{ user_email }}", "password": form["password_new"].value, "proof": "{{ get["token"] }}", "proof_type": "token" })
 
-            fetch(`/v1/users/${document['username']}`, {
-                method: "PATCH",
+            fetch(`/v1/account/password`, {
+                method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -163,7 +163,7 @@
             }).then((res) => {
                 if (res.status === 401) {
                     password_change_show_alert("A problem occurred with authentication.");
-                } else if (res.status === 200) {
+                } else if (res.status === 204) {
                     password_change_show_alert(`Success!<br/><br/>Now you will be redirected to the login screen.`, "success");
                     setTimeout(() => window.location.href = "/login", 3000);
                 }

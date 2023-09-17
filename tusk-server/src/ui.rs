@@ -10,6 +10,7 @@ use actix_web::http::StatusCode;
 use actix_web::web::{Path, ServiceConfig};
 use tusk_core::config::{Tusk};
 use tusk_core::error::{HttpOkOr, TuskHttpResult};
+use tusk_core::resources::{PasswordResetRequest, User};
 
 #[get("/login")]
 async fn login(tusk: Tusk) -> TuskHttpResult {
@@ -30,7 +31,19 @@ async fn password_reset_request(tusk: Tusk) -> TuskHttpResult {
 
 #[get("/password_reset/verify")]
 async fn password_reset_verify(tusk: Tusk) -> TuskHttpResult {
-    let context = tusk.context();
+    let mut context = tusk.context();
+    let mut db = tusk.db()?;
+    let get = context.get("get")
+        .or_bad_request()?;
+    let token = get.get("token")
+        .or_bad_request()?;
+    let token = token.as_str()
+        .or_bad_request()?
+        .try_into()
+        .or_bad_request()?;
+    let req = PasswordResetRequest::from_token(&mut db, token)?;
+    let user = User::from_id(&mut db, req.user_id())?;
+    context.insert("user_email", user.email());
     let page = tusk.render("pages/password_reset/verify.tera", &context)?;
     Ok(HttpResponse::Ok()
         .insert_header((actix_web::http::header::REFERRER_POLICY, "no-referrer"))
@@ -67,6 +80,7 @@ async fn page_handler(tusk: Tusk, page: Path<String>) -> TuskHttpResult {
 
     context.insert("user", &auth_session);
     context.insert("roles", &roles);
+    context.insert("page", page.as_ref());
 
     let user_dir = auth_session.directory(tusk.config())
         .log_error()?;

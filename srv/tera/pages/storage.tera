@@ -111,14 +111,14 @@
                 <div class="vr"></div>
                 <div class="btn-group">
                     {% if has_own_dir %}
-                        <button name="button_breadcrumb_root" type="button" class="btn btn-sm icon-link">{{ tusk::ui_icon_pair_sm(name="user") }} {{ username }}</button>
+                        <button name="button_breadcrumb_root" type="button" class="btn btn-sm icon-link">{{ tusk::ui_icon_pair_sm(name="user") }} {{ user.display }}</button>
                     {% else %}
                         <button name="button_breadcrumb_root" type="button" class="btn btn-sm icon-link">{{ tusk::ui_icon_pair_sm(name="world") }} Public</button>
                     {% endif %}
                     <button type="button" class="btn btn-sm icon-link dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
                     <ul class="dropdown-menu">
                         <li><button name="button_user_public" class="dropdown-item icon-link">{{ tusk::ui_icon_pair_sm(name="world") }} Public</button></li>
-                        <li><button name="button_user_self" class="dropdown-item icon-link" {% if has_own_dir == false %}disabled{% endif %}>{{ tusk::ui_icon_pair_sm(name="user") }} {{  username }}</button></li>
+                        <li><button name="button_user_self" class="dropdown-item icon-link" {% if has_own_dir == false %}disabled{% endif %}>{{ tusk::ui_icon_pair_sm(name="user") }} {{ user.display }}</button></li>
                     </ul>
                 </div>
                 <ol id="Breadcrumbs" class="sf-component-breadcrumb breadcrumb"></ol>

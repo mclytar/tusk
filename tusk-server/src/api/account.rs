@@ -39,6 +39,7 @@ pub fn verify_password_strength(password: &Secret<String>, user_inputs: &Vec<&st
 
 /// Defines the types of proof with which an user can prove that the patch request is legitimate.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum AccountProofType {
     /// No proof given.
     ///

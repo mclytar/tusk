@@ -1,8 +1,291 @@
 {% extends "template/page.tera" %}
 {% block main %}
+    <style>
+        tr, td {
+            height: 1.5rem;
+        }
+        td > pre {
+            margin: 0;
+        }
+    </style>
 <article class="container-fluid bg-body-tertiary p-4">
-    <h1>Version 0.1.0 is alive!</h1>
+    <h1>Version 0.1.0 is live!</h1>
     <p>This is the version 0.1.0 of Tusk.</p>
+    <h2>Current state of the project</h2>
+    <p>The project is... <i>Functional</i>.</p>
+    <p>The API is working as intended, all the unit and integration tests <span class="text-success">pass</span> and the code coverage is around <span class="text-danger">53%</span>,
+        increasing to <span class="text-danger">64%</span> if we do not consider the administration command line interface (which is only accessible by entering on the server).</p>
+    <p>In other words, it means that <span class="text-danger">64%</span> of the server has been tested and shown to be <span class="text-success">correct</span>.
+        What about the other 36%? Well, this part mainly contains error handling of situations that are not easy to reproduce (and almost impossible to be caused by the end user);
+        this part of the server will be tested in the near future, but it's not a crucial part for now.</p>
+    <p>If you are curious, the structure of the server and the details of the coverage are reported in the following table.</p>
+    <div id="accordionCoverage" class="accordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accordionTabCoverage">Coverage table (click to expand)</button>
+            </h2>
+            <div id="accordionTabCoverage" class="accordion-collapse collapse" data-bs-parent="#accordionCoverage">
+                <div class="accordion-body">
+                    <table class="table">
+                        <tr>
+                            <th>Filename</th>
+                            <th>Function Coverage</th>
+                            <th>Line Coverage</th>
+                            <th>Region Coverage</th>
+                            <th>Branch Coverage</th>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config.rs</pre></td>
+                            <td class='bg-danger'><pre>  78.38% (29/37)</pre></td>
+                            <td class='bg-danger'><pre>  73.66% (179/243)</pre></td>
+                            <td class='bg-danger'><pre>  59.44% (107/180)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config\diesel.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (4/4)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (9/9)</pre></td>
+                            <td class='bg-danger'><pre>  66.67% (10/15)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config\mail.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (4/4)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (12/12)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  86.67% (13/15)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config\redis.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (5/5)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (10/10)</pre></td>
+                            <td class='bg-danger'><pre>  73.33% (11/15)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config\ssl.rs</pre></td>
+                            <td class='bg-warning text-dark'><pre>  80.00% (4/5)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  91.67% (33/36)</pre></td>
+                            <td class='bg-danger'><pre>  72.73% (32/44)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config\tusk.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (3/3)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (3/3)</pre></td>
+                            <td class='bg-danger'><pre>  75.00% (9/12)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config\tusk\contacts.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (3/3)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (3/3)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (6/6)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config\tusk\serve.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (12/12)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (56/56)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  95.83% (46/48)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\config\tusk\ui.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (3/3)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (3/3)</pre></td>
+                            <td class='bg-danger'><pre>  57.14% (4/7)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\error.rs</pre></td>
+                            <td class='bg-danger'><pre>  20.18% (22/109)</pre></td>
+                            <td class='bg-danger'><pre>  24.16% (86/356)</pre></td>
+                            <td class='bg-danger'><pre>  21.72% (58/267)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\resources\password_reset.rs</pre></td>
+                            <td class='bg-danger'><pre>  70.59% (12/17)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  92.86% (65/70)</pre></td>
+                            <td class='bg-danger'><pre>  55.36% (31/56)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\resources\role.rs</pre></td>
+                            <td class='bg-danger'><pre>  35.29% (6/17)</pre></td>
+                            <td class='bg-danger'><pre>  27.54% (19/69)</pre></td>
+                            <td class='bg-danger'><pre>  23.44% (15/64)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\resources\user.rs</pre></td>
+                            <td class='bg-danger'><pre>  55.88% (19/34)</pre></td>
+                            <td class='bg-danger'><pre>  61.88% (99/160)</pre></td>
+                            <td class='bg-danger'><pre>  47.06% (56/119)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\schema.rs</pre></td>
+                            <td class='bg-warning text-dark'><pre>  94.12% (16/17)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  97.62% (41/42)</pre></td>
+                            <td class='bg-danger'><pre>  55.32% (52/94)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-core\src\session.rs</pre></td>
+                            <td class='bg-danger'><pre>  57.14% (8/14)</pre></td>
+                            <td class='bg-danger'><pre>  73.91% (34/46)</pre></td>
+                            <td class='bg-danger'><pre>  68.00% (34/50)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-derive\src\lib.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (2/2)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  92.59% (25/27)</pre></td>
+                            <td class='bg-danger'><pre>  73.91% (17/23)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-server\src\api.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (1/1)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (7/7)</pre></td>
+                            <td class='bg-success'><pre> 100.00% (1/1)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-server\src\api\account.rs</pre></td>
+                            <td class='bg-danger'><pre>  70.00% (14/20)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  95.91% (164/171)</pre></td>
+                            <td class='bg-danger'><pre>  76.15% (99/130)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-server\src\api\session.rs</pre></td>
+                            <td class='bg-warning text-dark'><pre>  80.00% (8/10)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  93.10% (27/29)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  84.38% (27/32)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-server\src\api\storage.rs</pre></td>
+                            <td class='bg-danger'><pre>  70.49% (43/61)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  85.03% (250/294)</pre></td>
+                            <td class='bg-danger'><pre>  71.43% (225/315)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-server\src\lib.rs</pre></td>
+                            <td class='bg-danger'><pre>  33.33% (4/12)</pre></td>
+                            <td class='bg-danger'><pre>  28.40% (23/81)</pre></td>
+                            <td class='bg-danger'><pre>  12.96% (7/54)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-server\src\main.rs</pre></td>
+                            <td class='bg-danger'><pre>   0.00% (0/4)</pre></td>
+                            <td class='bg-danger'><pre>   0.00% (0/21)</pre></td>
+                            <td class='bg-danger'><pre>   0.00% (0/20)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-server\src\os\windows.rs</pre></td>
+                            <td class='bg-danger'><pre>   0.00% (0/6)</pre></td>
+                            <td class='bg-danger'><pre>   0.00% (0/62)</pre></td>
+                            <td class='bg-danger'><pre>   0.00% (0/49)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row'>
+                            <td><pre>tusk-server\src\ui.rs</pre></td>
+                            <td class='bg-success'><pre> 100.00% (18/18)</pre></td>
+                            <td class='bg-warning text-dark'><pre>  97.56% (80/82)</pre></td>
+                            <td class='bg-danger'><pre>  79.27% (65/82)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                        <tr class='light-row-bold'>
+                            <td><pre>Totals</pre></td>
+                            <td class='bg-danger'><pre>  57.42% (240/418)</pre></td>
+                            <td class='bg-danger'><pre>  64.90% (1228/1892)</pre></td>
+                            <td class='bg-danger'><pre>  54.48% (925/1698)</pre></td>
+                            <td class='bg-danger'><pre>- (0/0)</pre></td>
+                        </tr>
+                    </table>
+                    <h5>Generated by llvm-cov -- llvm version 16.0.5-rust-1.72.0-stable</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+    <h2>Next steps</h2>
+    <p>From here, there are several next steps to be taken.</p>
+    <p>If you don't want to read everything, here is a summary:</p>
+    <ul>
+        <li>A support tab to submit issues and see their progress, as well as the progress on new functionalities.</li>
+        <li>A (hopefully well-written) framework to support both the aesthetic and the functionality of the user interface.</li>
+        <li>Some tool to write "blog" posts like this one.</li>
+        <li>Some more functionality and usability for the Cloud section.</li>
+    </ul>
+    <h4>Details about the next steps</h4>
+    <p>First of all, general support is missing.
+        If there are problems with the server, at the moment you need to write me in private (via email, message, etc.) and tell about the problem.
+        Therefore, the first step after the publication of the server would be to construct a <code>/support</code> section.</p>
+    <p>Then, well, the front end right now is... <i>Meh</i>.
+        Most of the interface relies on a framework called <a class="icon-link" href="https://getbootstrap.com/" target="_blank">Bootstrap <i class="bi-box-arrow-up-right small"></i></a>.
+        This framework is not bad, but it is not "minimal", in the sense that it doesn't allow to write simple code for non-trivial tasks.
+        If you look at the above collapsible table, the actual code drawing everything is something like this:</p>
+    <section class="border border-1 border-secondary ps-2 bg-light-subtle">
+        <code>
+            &lt;<span class="text-info">div</span> <span class="text-warning-emphasis">id</span>=<span class="text-success-emphasis">"accordionCoverage"</span> <span class="text-warning-emphasis">class</span>=<span class="text-success-emphasis">"accordion"</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">div</span> <span class="text-warning-emphasis">class</span>=<span class="text-success-emphasis">"accordion-item"</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">h2</span> <span class="text-warning-emphasis">class</span>=<span class="text-success-emphasis">"accordion-header"</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">button</span> <span class="text-warning-emphasis">class</span>=<span class="text-success-emphasis">"accordion-button collapsed"</span> <span class="text-warning-emphasis">type</span>=<span class="text-success-emphasis">"button"</span> <span class="text-warning-emphasis">data-bs-toggle</span>=<span class="text-success-emphasis">"collapse"</span> <span class="text-warning-emphasis">data-bs-target</span>=<span class="text-success-emphasis">"#accordionTabCoverage"</span>&gt;<span class="text-light-emphasis">Coverage table (click to expand)</span>&lt;/<span class="text-info">button</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="text-info">h2</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">div</span> <span class="text-warning-emphasis">id</span>=<span class="text-success-emphasis">"accordionTabCoverage"</span> <span class="text-warning-emphasis">class</span>=<span class="text-success-emphasis">"accordion-collapse collapse"</span> <span class="text-warning-emphasis">data-bs-parent</span>=<span class="text-success-emphasis">"#accordionCoverage"</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">div</span> <span class="text-warning-emphasis">class</span>=<span class="text-success-emphasis">"accordion-body"</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-secondary-emphasis">&lt;!-- Table... --&gt;</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="text-info">div</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="text-info">div</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="text-info">div</span>&gt;<br/>
+            &lt;/<span class="text-info">div</span>&gt;
+        </code>
+    </section>
+    <p>Several questions arise.
+        Apart from the <code>id</code> of the items, why do I need to repeat <code>accordion</code> a total of 6 times, between <code>accordion</code>, <code>accordion-item</code>, etc.?
+        Look at the following example:</p>
+    <section class="border border-1 border-secondary ps-2 bg-light-subtle">
+        <code>
+            &lt;<span class="text-info">ul</span> <span class="text-warning-emphasis">id</span>=<span class="text-success-emphasis">"accordionCoverage"</span> <span class="text-warning-emphasis">class</span>=<span class="text-success-emphasis">"accordion"</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">li</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">header</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">button</span> <span class="text-warning-emphasis">data-bs-toggle</span>=<span class="text-success-emphasis">"collapse"</span> <span class="text-warning-emphasis">data-bs-target</span>=<span class="text-success-emphasis">"#accordionTabCoverage"</span>&gt;<span class="text-light-emphasis">Coverage table (click to expand)</span>&lt;/<span class="text-info">button</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="text-info">header</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">div</span> <span class="text-warning-emphasis">id</span>=<span class="text-success-emphasis">"accordionTabCoverage"</span> <span class="text-warning-emphasis">class</span>=<span class="text-success-emphasis">"collapse"</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-info">main</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="text-secondary-emphasis">&lt;!-- Table... --&gt;</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="text-info">main</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="text-info">div</span>&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="text-info">li</span>&gt;<br/>
+            &lt;/<span class="text-info">ul</span>&gt;
+        </code>
+    </section>
+    <p>Isn't this cleaner, easier to understand, to write and to remember?
+        Every element of an accordion is actually an element of a list, which consists of a <code>header</code> and a <code>main</code> part.
+        For this reason, I am currently writing my own framework, in a simple, semantic and, hopefully, powerful way.
+        My hope is to also get rid of the <code>div id="accordionTabCoverage"</code>, but HTML and CSS are sometimes a bit limited in capabilities, and some elements are still needed, even though they are only there to wrap other elements.</p>
+    <p>I want to stress that this is not only for laziness when writing code and for readability:
+        software that is easier to write and easier to understand is also easier to maintain and, in case, to correct.
+        It will be easier to add new functionalities, new web pages, new everything.
+        And yes, it's also a matter of laziness and a bit of aesthetics, but that is not the main reason.</p>
+    <p>You want an example of an extremely well written piece of software? <a class="icon-link" href="https://www.factorio.com/" target="_blank">Factorio <i class="bi-box-arrow-up-right small"></i></a>.
+        Okay, it's actually a video game, which makes things even more challenging.
+        What I am writing right now on this page is slightly inspired by their <a class="icon-link" href="https://www.factorio.com/blog/" target="_blank">FFF <i class="bi-box-arrow-up-right small"></i></a> (Factorio Friday Facts),
+        and I may put, in the future, a section dedicated to all the news about this project.
+        But that is other functionality that needs to be written, also because I am not happy to write plain HTML when I could use some sort of rich text editor.</p>
+    <p>Last, but not least, before introducing new functionalities, I would like to have a nicer state about the cloud section.
+        For now, it just works, and it is kind of nice-looking, but I didn't test all the edge cases yet and there are not many functionalities:
+        for instance, the ability to replace files, copy-paste functionalities, a better <code>details</code> view, some info about the disk usage.
+        All these functionalities will be eventually implemented, somehow.</p>
+    <h2>History and implementation details</h2>
     <p>It may seem not a lot of work, but these were the actual steps that allowed this server app to be possible.</p>
     <h4>Checkpoint #1</h4>
     <ul>

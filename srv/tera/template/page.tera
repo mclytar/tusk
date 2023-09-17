@@ -71,11 +71,10 @@
         }
     </style>
     <script>
-        document['username'] = "{{ username }}";
-        document['roles'] = [];
+        document['user'] = {{ user | json_encode() | safe }};
+        document['roles'] = {{ roles | json_encode() | safe }};
         document['has_own_dir'] = {{ has_own_dir }};
         document['ui_icon_filetype'] = "{{ ui_icon_filetype }}";
-        {% for role in roles %}document['roles'].push({ "name": "{{ role.name }}", "display": "{{ role.display }}" });{% endfor %}
     </script>
 {% endblock %}
 {% block body %}
@@ -96,7 +95,7 @@
         </div>
         <div class="d-flex flex-column ms-2 me-2 p-2">
             <img src="/static/tusk.svg" alt="" width="128" height="128" class="d-inline-block ms-auto me-auto">
-            <a href="/" class="d-flex fs-5 mt-2 mb-2 text-light text-decoration-none ms-auto me-auto">{{ username }}</a>
+            <a href="/" class="d-flex fs-5 mt-2 mb-2 text-light text-decoration-none ms-auto me-auto">{{ user.display }}</a>
             <div class="d-flex justify-content-center">
                 {% set_global user_has_role_admin = false -%}
                 {% set_global user_has_role_directory = false -%}

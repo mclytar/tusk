@@ -1,0 +1,94 @@
+{% extends "template/base.tera" %}
+{% block head %}
+    {{ super() }}
+    <style>
+        body {
+            display: flex;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .gradient-custom {
+            /* fallback for old browsers */
+            background: #6a11cb;
+
+            /* Chrome 10-25, Safari 5.1-6 */
+            background: -webkit-linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+
+            /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            background: linear-gradient(to right, rgba(106, 17, 203, 1), rgba(37, 117, 252, 1));
+        }
+
+        @media (min-width: 576px) {
+            .login-card {
+                width: 400px;
+            }
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <div class="w-100 h-100 gradient-custom d-flex align-items-center">
+        <div class="card mx-auto shadow-sm login-card">
+            <div class="card-header">
+                <h3>Tusk server</h3>
+            </div>
+            <div class="card-body">
+                <h4 class="mb-3">Forgotten password</h4>
+                <p>Please type here the email associated with your account.</p>
+                <form name="password_reset" class="needs-validation" action="javascript:on_password_change_confirm()" novalidate>
+                    <div class="form-floating mb-3">
+                        <input id="input_email" type="email" name="email" class="form-control" placeholder="email" required>
+                        <label for="input_email" class="form-label">Email</label>
+                    </div>
+                    <div id="formAlertContainer"></div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+
+        function password_change_show_warning(message) {
+            let alert_content = `<div class="alert alert-warning alert-dismissible" role="alert">${message}</div>`;
+            let alert_container = document.querySelector("#formAlertContainer");
+            if (message.length > 0) {
+                alert_container.innerHTML = alert_content;
+            } else {
+                alert_container.innerHTML = "";
+            }
+        }
+
+        function password_change_show_alert(message, kind="danger") {
+            let alert_content = `<div class="alert alert-${kind} alert-dismissible" role="alert">${message}</div>`;
+            let alert_container = document.querySelector("#formAlertContainer");
+            if (message.length > 0) {
+                alert_container.innerHTML = alert_content;
+            } else {
+                alert_container.innerHTML = "";
+            }
+        }
+
+        function on_password_change_confirm() {
+            let form = document.forms.namedItem("password_reset");
+
+            let data = JSON.stringify({ "email": form["email"].value })
+
+            fetch(`/v1/account/password`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: data
+            }).then((res) => {
+                if (res.status === 202) {
+                    password_change_show_alert(`Success!<br/><br/>If an account exists with the given email, a reset link will be set there.`, "success");
+                } else {
+                    password_change_show_alert("A problem occurred with the request.");
+                }
+            });
+        }
+    </script>
+{% endblock %}

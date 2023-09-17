@@ -138,10 +138,10 @@
                 return;
             }
 
-            let data = JSON.stringify({ "password": form["password_new"].value, "proof": form["password_old"].value })
+            let data = JSON.stringify({ "email": document['user'].email, "password": form["password_new"].value, "proof": form["password_old"].value, "proof_type": "password" })
 
-            fetch(`/v1/users/${document['username']}`, {
-                method: "PATCH",
+            fetch(`/v1/account/password`, {
+                method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -150,7 +150,7 @@
                 if (res.status === 401) {
                     form["password_old"].classList.add("is-invalid");
                     password_change_show_alert("Incorrect password.");
-                } else if (res.status === 200) {
+                } else if (res.status === 204) {
                     password_change_show_alert(`Success!<br/><br/>For security reasons, you will be disconnected.`, "success");
                     setTimeout(() => window.location.href = "/login", 3000);
                 }

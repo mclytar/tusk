@@ -35,11 +35,11 @@
             </div>
             <div class="card-body">
                 <h4 class="mb-3">Log in</h4>
-                <form id="formLogin" class="needs-validation" action="javascript:formLogin_submit()" novalidate>
+                <form name="login" id="formLogin" class="needs-validation" action="javascript:formLogin_submit()" novalidate>
                     <div class="form-floating mb-3">
-                        <input type="text" name="username" class="form-control" id="inputUsername" placeholder="username" oninput="input_clearInvalid(this)" required>
-                        <label for="inputUsername" class="form-label">Username</label>
-                        <div id="inputUsernameFeedback" class="invalid-feedback">
+                        <input type="text" name="email" class="form-control" id="inputEmail" placeholder="email" oninput="input_clearInvalid(this)" required>
+                        <label for="inputEmail" class="form-label">Email</label>
+                        <div id="inputEmailFeedback" class="invalid-feedback">
                             Mandatory
                         </div>
                     </div>
@@ -50,6 +50,7 @@
                             Mandatory
                         </div>
                     </div>
+                    <a class="icon-link mb-4" href="/password_reset/request">Forgot password?</a>
                     <div id="formAlertContainer"></div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Log in</button>
@@ -83,25 +84,28 @@
                 return;
             }
 
-            $.ajax({
-                type: "POST",
-                url: "{{ protocol }}://{{ api_domain }}/v1/session",
-                data: $("#formLogin").serialize(),
-                error: function (xhr, status, err) {
-                    if (xhr.status === 401) {
-                        // Handle bad credentials
-                        $("#inputUsername").addClass("is-invalid");
-                        $("#inputPassword").addClass("is-invalid");
-                        formLogin_showAlert("Wrong username or password.");
-                    } else {
-                        // Handle server error
-                        formLogin_showAlert("Internal server error; please retry later.");
-                    }
+            let login_form = document.forms.namedItem('login');
+            let email = login_form.email.value;
+            let password = login_form.password.value;
+            let data = JSON.stringify({ "email": email, "password": password });
+
+            fetch(`/v1/session`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
                 },
-                success: function (data, status, xhr) {
+                body: data
+            }).then((res) => {
+                if (res.status === 401) {
+                    $("#inputUsername").addClass("is-invalid");
+                    $("#inputPassword").addClass("is-invalid");
+                    formLogin_showAlert("Wrong username or password.");
+                } else if (res.status === 201) {
                     window.location.href = "/";
+                } else {
+                    formLogin_showAlert("Internal server error; please retry later.");
                 }
-            })
+            });
         }
 
         function formLogin_setInvalid() {
